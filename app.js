@@ -1,17 +1,14 @@
-// ==================== CONFIGURAÇÕES E ESTADO ====================
+// ==================== CONFIGURAÇÃO DO SISTEMA ====================
 const STORAGE_KEY = 'compromissos_app_state';
 const DEFAULT_PEOPLE = ['Casa', 'Daniela', 'Rogério', 'Isabelli', 'Stephanie'];
 
-let currentFilter = 'all';
 let currentTab = 'pending';
+let activeFormType = 'cartao'; // cartao ou consumo
 
-// ==================== UTILITÁRIOS DE DATA (BRASÍLIA) ====================
+// ==================== DATA E MOTOR DE BRASÍLIA ====================
 function getNowBrasilia() {
     const formatter = new Intl.DateTimeFormat('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
+        timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit'
     });
     const parts = formatter.formatToParts(new Date());
     const year = parseInt(parts.find(p => p.type === 'year')?.value || '2026');
@@ -24,44 +21,33 @@ function isCurrentMonth(date) {
     const now = getNowBrasilia();
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
 }
-
 function isNextMonth(date) {
     const now = getNowBrasilia();
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    return date.getMonth() === nextMonth.getMonth() && date.getFullYear() === nextMonth.getFullYear();
+    const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return date.getMonth() === nm.getMonth() && date.getFullYear() === nm.getFullYear();
 }
-
 function isMonthAfterNext(date) {
     const now = getNowBrasilia();
-    const monthAfterNext = new Date(now.getFullYear(), now.getMonth() + 2, 1);
-    return date.getMonth() === monthAfterNext.getMonth() && date.getFullYear() === monthAfterNext.getFullYear();
+    const man = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+    return date.getMonth() === man.getMonth() && date.getFullYear() === man.getFullYear();
 }
 
-function formatDate(date) {
-    return new Intl.DateTimeFormat('pt-BR').format(date);
-}
+function formatDate(date) { return new Intl.DateTimeFormat('pt-BR').format(date); }
+function formatCurrency(v) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v); }
 
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount);
-}
-
-// ==================== GERENCIAMENTO DE BANCO DE DADOS ====================
+// ==================== INFRAESTRUTURA DE DADOS ====================
 function getAppState() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (!stored) {
-            const defaultState = getDefaultState();
-            saveAppState(defaultState);
-            return defaultState;
+            const def = getDefaultState();
+            saveAppState(def);
+            return def;
         }
         const state = JSON.parse(stored);
-        state.transactions = (state.transactions || []).map(t => ({
-            ...t,
-            dueDate: new Date(t.dueDate)
-        }));
+        state.transactions = (state.transactions || []).map(t => ({ ...t, dueDate: new Date(t.dueDate) }));
         return state;
-    } catch (error) {
-        console.error('Erro ao ler estado:', error);
+    } catch (e) {
         return getDefaultState();
     }
 }
@@ -69,167 +55,57 @@ function getAppState() {
 function getDefaultState() {
     return {
         accounts: [],
-        people: DEFAULT_PEOPLE.map((name, index) => ({
-            id: `person_${index}`,
-            name,
-            createdAt: Date.now(),
-        })),
+        people: DEFAULT_PEOPLE.map((name, i) => ({ id: `p_${i}`, name, createdAt: Date.now() })),
         transactions: [],
-        lastUpdated: Date.now(),
+        lastUpdated: Date.now()
     };
 }
 
-function saveAppState(state) {
-    try {
-        state.lastUpdated = Date.now();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-        console.error('Erro ao salvar:', error);
-    }
+function saveAppState(s) {
+    s.lastUpdated = Date.now();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
 }
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-// ==================== LOGICA PARCELAS E TOTAIS ====================
-function calculateInstallmentDates(totalAmount, installments, closingDay, dueDay, purchaseDate = getNowBrasilia()) {
+// ==================== CÁLCULO DAS DESPESAS ====================
+function calculateInstallments(amount, qty, closingDay, dueDay) {
     const dates = [];
-    let currentMonth = purchaseDate.getMonth();
-    let currentYear = purchaseDate.getFullYear();
+    const now = getNowBrasilia();
+    let m = now.getMonth();
+    let y = now.getFullYear();
 
-    if (purchaseDate.getDate() > closingDay) {
-        currentMonth += 1;
-        if (currentMonth > 11) {
-            currentMonth = 0;
-            currentYear += 1;
-        }
+    if (now.getDate() > closingDay) {
+        m += 1;
+        if (m > 11) { m = 0; y += 1; }
     }
-
-    for (let i = 0; i < installments; i++) {
-        dates.push(new Date(currentYear, currentMonth + i, dueDay));
+    for (let i = 0; i < qty; i++) {
+        dates.push(new Date(y, m + i, dueDay));
     }
     return dates;
 }
 
-function calculateCurrentMonthTotal(transactions) {
-    return transactions.filter(t => !t.isPaid && isCurrentMonth(t.dueDate)).reduce((sum, t) => sum + t.amount, 0);
-}
-
-function calculateNextMonthTotal(transactions) {
-    return transactions.filter(t => !t.isPaid && isNextMonth(t.dueDate)).reduce((sum, t) => sum + t.amount, 0);
-}
-
-function calculateMonthAfterNextTotal(transactions) {
-    return transactions.filter(t => !t.isPaid && isMonthAfterNext(t.dueDate)).reduce((sum, t) => sum + t.amount, 0);
-}
-
-// ==================== OPERAÇÕES DE CADASTROS ====================
-function createAccount() {
-    const name = document.getElementById('inputAccountName').value.trim();
-    const closingDay = parseInt(document.getElementById('inputClosingDay').value);
-    const dueDay = parseInt(document.getElementById('inputDueDay').value);
-
-    if (!name || !closingDay || !dueDay) {
-        alert('Preencha todas as informações do cartão.');
-        return;
-    }
-
-    const state = getAppState();
-    const newAccount = { id: generateId(), name, closingDay, dueDay, createdAt: Date.now() };
-    state.accounts.push(newAccount);
-    saveAppState(state);
-
-    document.getElementById('inputAccountName').value = '';
-    document.getElementById('inputClosingDay').value = '';
-    document.getElementById('inputDueDay').value = '';
-
-    closeModal('modalNewAccount');
-    updateUI();
-}
-
-function createPerson() {
-    const name = document.getElementById('inputPersonName').value.trim();
-    if (!name) {
-        alert('Digite o nome da pessoa.');
-        return;
-    }
-
-    const state = getAppState();
-    const newPerson = { id: generateId(), name, createdAt: Date.now() };
-    state.people.push(newPerson);
-    saveAppState(state);
-
-    document.getElementById('inputPersonName').value = '';
-    closeModal('modalNewPerson');
-    updateUI();
-}
-
-function createTransaction() {
-    const accountId = document.getElementById('selectAccount').value;
-    const description = document.getElementById('inputDescription').value.trim();
-    const amount = parseFloat(document.getElementById('inputAmount').value);
-    const installments = parseInt(document.getElementById('selectInstallments').value);
-    const personId = document.getElementById('selectPerson').value;
-    const isRecurring = document.getElementById('checkRecurring').checked;
-
-    if (!accountId || !description || isNaN(amount) || amount <= 0 || !personId) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
-        return;
-    }
-
-    const state = getAppState();
-    const account = state.accounts.find(a => a.id === accountId);
-
-    const partAmount = parseFloat((amount / installments).toFixed(2));
-    const dates = calculateInstallmentDates(amount, installments, account.closingDay, account.dueDay);
-
-    dates.forEach((dueDate, index) => {
-        state.transactions.push({
-            id: generateId(),
-            accountId,
-            personId,
-            description,
-            amount: partAmount,
-            installmentNumber: index + 1,
-            totalInstallments: installments,
-            dueDate,
-            isPaid: false,
-            isRecurring,
-            createdAt: Date.now(),
-        });
-    });
-
-    saveAppState(state);
-
-    document.getElementById('inputDescription').value = '';
-    document.getElementById('inputAmount').value = '';
-    document.getElementById('selectInstallments').value = '1';
-    document.getElementById('checkRecurring').checked = false;
-
-    closeModal('modalNewTransaction');
-    updateUI();
-}
-
-function toggleTransactionPayment(id) {
-    const state = getAppState();
-    const item = state.transactions.find(t => t.id === id);
-    if (item) {
-        item.isPaid = !item.isPaid;
-        saveAppState(state);
-        updateUI();
+// ==================== CONTROLADORES DA REQUISIÇÃO ====================
+function setFormType(type) {
+    activeFormType = type;
+    document.getElementById('typeCartao').classList.toggle('active', type === 'cartao');
+    document.getElementById('typeConsumo').classList.toggle('active', type === 'consumo');
+    document.getElementById('groupAccount').style.display = type === 'cartao' ? 'block' : 'none';
+    document.getElementById('groupInstallments').style.display = type === 'cartao' ? 'block' : 'none';
+    
+    if(type === 'consumo') {
+        const state = getAppState();
+        const casaObj = state.people.find(p => p.name === 'Casa');
+        if(casaObj) document.getElementById('selectPerson').value = casaObj.id;
     }
 }
 
-// ==================== INTERFACE GRÁFICA CONTROLADORA ====================
-function openModal(id) {
-    const target = document.getElementById(id);
-    if (target) target.style.display = 'flex';
+function openModal(id) { 
+    const m = document.getElementById(id); 
+    if(m) m.style.display = 'flex'; 
 }
-
-function closeModal(id) {
-    const target = document.getElementById(id);
-    if (target) target.style.display = 'none';
+function closeModal(id) { 
+    const m = document.getElementById(id); 
+    if(m) m.style.display = 'none'; 
 }
 
 function switchTab(tab) {
@@ -238,152 +114,343 @@ function switchTab(tab) {
     if(tab === 'pending') document.getElementById('tabPending').classList.add('active');
     if(tab === 'paid') document.getElementById('tabPaid').classList.add('active');
     if(tab === 'all') document.getElementById('tabAll').classList.add('active');
-    updateTransactionList(getAppState());
+    updateUI();
 }
 
-function filterByAccount(id) {
-    currentFilter = id;
-    document.querySelectorAll('.filter-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.filter === id);
-    });
-    updateTransactionList(getAppState());
+// ==================== OPERAÇÕES (SALVAR / EXCLUIR / EDITAR) ====================
+function createAccount() {
+    const name = document.getElementById('inputAccountName').value.trim();
+    const closing = parseInt(document.getElementById('inputClosingDay').value);
+    const due = parseInt(document.getElementById('inputDueDay').value);
+
+    if (!name || !closing || !due) return alert('Preencha as configurações do cartão.');
+
+    const state = getAppState();
+    state.accounts.push({ id: generateId(), name, closingDay: closing, dueDay: due });
+    saveAppState(state);
+
+    document.getElementById('inputAccountName').value = '';
+    document.getElementById('inputClosingDay').value = '';
+    document.getElementById('inputDueDay').value = '';
+    closeModal('modalNewAccount');
+    updateUI();
+}
+
+function saveTransaction() {
+    const txId = document.getElementById('inputEditTxId').value;
+    const description = document.getElementById('inputDescription').value.trim();
+    const amount = parseFloat(document.getElementById('inputAmount').value);
+    const personId = document.getElementById('selectPerson').value;
+
+    if (!description || isNaN(amount) || amount <= 0 || !personId) return alert('Preencha os campos obrigatórios.');
+
+    const state = getAppState();
+
+    if (txId) {
+        // Modo Edição Direta
+        const item = state.transactions.find(t => t.id === txId);
+        if(item) {
+            item.description = description;
+            item.amount = amount;
+            item.personId = personId;
+            if (activeFormType === 'cartao') {
+                item.accountId = document.getElementById('selectAccount').value;
+            } else {
+                item.accountId = 'consumo';
+            }
+        }
+    } else {
+        // Modo Criação Inteligente
+        if (activeFormType === 'cartao') {
+            const accId = document.getElementById('selectAccount').value;
+            if(!accId) return alert('Selecione o cartão.');
+            const acc = state.accounts.find(a => a.id === accId);
+            const qty = parseInt(document.getElementById('selectInstallments').value);
+            const part = parseFloat((amount / qty).toFixed(2));
+            const dates = calculateInstallments(amount, qty, acc.closingDay, acc.dueDay);
+
+            dates.forEach((dueDate, i) => {
+                state.transactions.push({
+                    id: generateId(), accountId: accId, personId, description,
+                    amount: part, installmentNumber: i + 1, totalInstallments: qty,
+                    dueDate, isPaid: false
+                });
+            });
+        } else {
+            // Conta de Consumo (Vence no mês atual no dia corrente)
+            state.transactions.push({
+                id: generateId(), accountId: 'consumo', personId, description,
+                amount, installmentNumber: 1, totalInstallments: 1,
+                dueDate: getNowBrasilia(), isPaid: false
+            });
+        }
+    }
+
+    saveAppState(state);
+    closeModal('modalNewTransaction');
+    updateUI();
+}
+
+function deleteTransaction(id) {
+    if(!confirm("Tem certeza que deseja excluir permanentemente este lançamento?")) return;
+    const state = getAppState();
+    state.transactions = state.transactions.filter(t => t.id !== id);
+    saveAppState(state);
+    closeModal('modalPersonHistory');
+    updateUI();
+}
+
+function startEditTransaction(id) {
+    const state = getAppState();
+    const t = state.transactions.find(item => item.id === id);
+    if(!t) return;
+
+    closeModal('modalPersonHistory');
+    document.getElementById('inputEditTxId').value = t.id;
+    document.getElementById('txModalTitle').textContent = "Editar Lançamento";
+    document.getElementById('inputDescription').value = t.description;
+    document.getElementById('inputAmount').value = t.amount;
+    document.getElementById('selectPerson').value = t.personId;
+
+    if(t.accountId === 'consumo') {
+        setFormType('consumo');
+    } else {
+        setFormType('cartao');
+        document.getElementById('selectAccount').value = t.accountId;
+    }
+    openModal('modalNewTransaction');
+}
+
+function togglePayment(id) {
+    const state = getAppState();
+    const t = state.transactions.find(item => item.id === id);
+    if(t) { t.isPaid = !t.isPaid; saveAppState(state); updateUI(); }
+}
+
+// ==================== CONSTRUÇÃO DA INTERFACE GRÁFICA ====================
+function openPersonHistory(personId, name) {
+    const state = getAppState();
+    const box = document.getElementById('personHistoryRows');
+    document.getElementById('personHistoryTitle').textContent = `Gastos de ${name}`;
+    box.innerHTML = '';
+
+    const list = state.transactions.filter(t => t.personId === personId && !t.isPaid && isCurrentMonth(t.dueDate));
+    let totalSum = 0;
+
+    if(list.length === 0) {
+        box.innerHTML = '<div class="empty-state">Nenhum gasto em aberto este mês.</div>';
+    } else {
+        list.forEach(t => {
+            totalSum += t.amount;
+            const row = document.createElement('div');
+            row.className = 'history-item-row';
+            
+            let origin = t.accountId === 'consumo' ? '📄 Consumo' : '💳 Cartão';
+            if(t.accountId !== 'consumo') {
+                const accName = state.accounts.find(a => a.id === t.accountId)?.name || 'Cartão';
+                origin = `${accName} (${t.installmentNumber}/${t.totalInstallments})`;
+            }
+
+            row.innerHTML = `
+                <div>
+                    <div style="font-weight:600;">${t.description}</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary);">${origin}</div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span style="font-weight:700; color:var(--accent); margin-right:0.5rem;">${formatCurrency(t.amount)}</span>
+                    <button class="history-action-btn" onclick="startEditTransaction('${t.id}')">✏️</button>
+                    <button class="history-action-btn" onclick="deleteTransaction('${t.id}')">🗑️</button>
+                </div>
+            `;
+            box.appendChild(row);
+        });
+    }
+
+    document.getElementById('personHistoryTotal').textContent = formatCurrency(totalSum);
+    openModal('modalPersonHistory');
 }
 
 function updateUI() {
     const state = getAppState();
-    
-    // Atualiza Totais
-    document.getElementById('totalCurrentMonth').textContent = formatCurrency(calculateCurrentMonthTotal(state.transactions));
-    document.getElementById('totalNextMonth').textContent = formatCurrency(calculateNextMonthTotal(state.transactions));
-    document.getElementById('totalMonthAfterNext').textContent = formatCurrency(calculateMonthAfterNextTotal(state.transactions));
+    const now = getNowBrasilia();
 
-    // Atualiza Filtros Superiores
-    const carousel = document.getElementById('carouselFilters');
-    if (carousel) {
-        carousel.innerHTML = '';
-        const btnAll = document.createElement('button');
-        btnAll.className = `filter-btn ${currentFilter === 'all' ? 'active' : ''}`;
-        btnAll.dataset.filter = 'all';
-        btnAll.textContent = 'Todas';
-        btnAll.onclick = () => filterByAccount('all');
-        carousel.appendChild(btnAll);
+    // 1. Totais Superiores
+    const totalCurrent = state.transactions.filter(t => !t.isPaid && isCurrentMonth(t.dueDate)).reduce((s, t) => s + t.amount, 0);
+    const totalNext = state.transactions.filter(t => !t.isPaid && isNextMonth(t.dueDate)).reduce((s, t) => s + t.amount, 0);
+    const totalSub = state.transactions.filter(t => !t.isPaid && isMonthAfterNext(t.dueDate)).reduce((s, t) => s + t.amount, 0);
 
-        state.accounts.forEach(acc => {
-            const btn = document.createElement('button');
-            btn.className = `filter-btn ${currentFilter === acc.id ? 'active' : ''}`;
-            btn.dataset.filter = acc.id;
-            btn.textContent = acc.name;
-            btn.onclick = () => filterByAccount(acc.id);
-            carousel.appendChild(btn);
+    document.getElementById('totalCurrentMonth').textContent = formatCurrency(totalCurrent);
+    document.getElementById('totalNextMonth').textContent = formatCurrency(totalNext);
+    document.getElementById('totalMonthAfterNext').textContent = formatCurrency(totalSub);
+
+    // 2. Renderizar Balões Estilo Cofrinho
+    const balloonsBox = document.getElementById('peopleBalloonsBox');
+    if (balloonsBox) {
+        balloonsBox.innerHTML = '';
+        state.people.forEach(p => {
+            const sum = state.transactions
+                .filter(t => t.personId === p.id && !t.isPaid && isCurrentMonth(t.dueDate))
+                .reduce((s, t) => s + t.amount, 0);
+
+            const ball = document.createElement('div');
+            ball.className = 'person-balloon';
+            ball.onclick = () => openPersonHistory(p.id, p.name);
+            ball.innerHTML = `
+                <span class="person-name">${p.name}</span>
+                <span class="person-amount">${formatCurrency(sum)}</span>
+            `;
+            balloonsBox.appendChild(ball);
         });
     }
 
-    // Atualiza Seletores nos formulários
+    // 3. Atualizar Seletores nos Modais
     const selAcc = document.getElementById('selectAccount');
     const selPer = document.getElementById('selectPerson');
-    
     if (selAcc) {
-        selAcc.innerHTML = '<option value="">Escolha o Cartão/Conta</option>';
+        selAcc.innerHTML = '';
         state.accounts.forEach(a => selAcc.innerHTML += `<option value="${a.id}">${a.name}</option>`);
     }
     if (selPer) {
-        selPer.innerHTML = '<option value="">Escolha a Pessoa</option>';
+        selPer.innerHTML = '';
         state.people.forEach(p => selPer.innerHTML += `<option value="${p.id}">${p.name}</option>`);
     }
 
-    updateTransactionList(state);
+    // 4. Renderizar Lista Central Unificada (Evita o efeito pergaminho)
+    renderMainList(state);
 }
 
-function updateTransactionList(state) {
-    let list = state.transactions || [];
-
-    if (currentFilter !== 'all') list = list.filter(t => t.accountId === currentFilter);
-    if (currentTab === 'pending') list = list.filter(t => !t.isPaid);
-    if (currentTab === 'paid') list = list.filter(t => t.isPaid);
-
-    list.sort((a, b) => a.dueDate - b.dueDate);
-
+function renderMainList(state) {
     const box = document.getElementById('transactionList');
     if (!box) return;
     box.innerHTML = '';
 
+    let list = [];
+
+    // Filtragem por Abas
+    let filteredTxs = state.transactions || [];
+    if (currentTab === 'pending') filteredTxs = filteredTxs.filter(t => !t.isPaid && isCurrentMonth(t.dueDate));
+    if (currentTab === 'paid') filteredTxs = filteredTxs.filter(t => t.isPaid && isCurrentMonth(t.dueDate));
+    if (currentTab === 'all') filteredTxs = filteredTxs.filter(t => isCurrentMonth(t.dueDate));
+
+    // Mapeamento Inteligente: Agrupa faturas de cartão repetidas para encurtar a tela
+    const grouped = {};
+
+    filteredTxs.forEach(t => {
+        if (t.accountId !== 'consumo' && currentTab === 'pending') {
+            // Agrupa faturas de cartões em aberto
+            const key = `card_${t.accountId}`;
+            if (!grouped[key]) {
+                const cardName = state.accounts.find(a => a.id === t.accountId)?.name || 'Cartão de Crédito';
+                grouped[key] = {
+                    isGroup: true,
+                    description: `Fatura ${cardName}`,
+                    details: 'Fechamento Automático',
+                    amount: 0,
+                    isPaid: false,
+                    ids: []
+                };
+            }
+            grouped[key].amount += t.amount;
+            grouped[key].ids.push(t.id);
+        } else {
+            // Lançamento avulso ou conta de consumo
+            const pName = state.people.find(p => p.id === t.personId)?.name || 'Geral';
+            let lbl = t.accountId === 'consumo' ? '📄 Consumo' : '💳 Fatura';
+            list.push({
+                id: t.id,
+                isGroup: false,
+                description: t.description,
+                details: `${pName} • ${lbl}`,
+                amount: t.amount,
+                isPaid: t.isPaid
+            });
+        }
+    });
+
+    // Injeta os cartões agrupados na lista final
+    Object.values(grouped).forEach(g => list.push(g));
+
     if (list.length === 0) {
-        box.innerHTML = '<div class="empty-state">Nenhum lançamento encontrado nesta aba.</div>';
+        box.innerHTML = '<div class="empty-state">Nenhum compromisso cadastrado para este mês.</div>';
         return;
     }
 
-    list.forEach(t => {
-        const p = state.people.find(person => person.id === t.personId);
-        const card = document.createElement('div');
-        card.className = `transaction-item ${t.isPaid ? 'paid' : ''}`;
-        card.innerHTML = `
+    list.forEach(item => {
+        const row = document.createElement('div');
+        row.className = `transaction-item ${item.isPaid ? 'paid' : ''}`;
+        
+        let actionButtonHTML = '';
+        if (item.isGroup) {
+            actionButtonHTML = `<span style="font-size:0.75rem; color:var(--text-secondary); font-style:italic;">Ver nos Balões</span>`;
+        } else {
+            actionButtonHTML = `
+                <button class="transaction-btn ${item.isPaid ? 'paid' : 'pay'}" onclick="togglePayment('${item.id}')">
+                    ${item.isPaid ? '✓' : 'Pagar'}
+                </button>
+            `;
+        }
+
+        row.innerHTML = `
             <div class="transaction-info">
-                <div class="transaction-description">${t.description}</div>
-                <div class="transaction-details">${p ? p.name : 'Geral'} • ${formatDate(t.dueDate)} ${t.totalInstallments > 1 ? `(${t.installmentNumber}/${t.totalInstallments})` : ''}</div>
+                <div class="transaction-description">${item.description}</div>
+                <div class="transaction-details">${item.details}</div>
             </div>
-            <div class="transaction-amount">${formatCurrency(t.amount)}</div>
-            <button class="transaction-btn ${t.isPaid ? 'paid' : 'pay'}" onclick="toggleTransactionPayment('${t.id}')">
-                ${t.isPaid ? '✓' : 'Pagar'}
-            </button>
+            <div class="transaction-amount">${formatCurrency(item.amount)}</div>
+            <div>${actionButtonHTML}</div>
         `;
-        box.appendChild(card);
+        box.appendChild(row);
     });
 }
 
-// ==================== CONFIGURAÇÃO DOS CLIQUES (MOBILE SAFE) ====================
+// ==================== CAPTURA DE EVENTOS INICIAIS ====================
 document.addEventListener('DOMContentLoaded', () => {
     updateUI();
 
-    // Cliques do Modal de Lançamentos
-    document.getElementById('btnOpenMainModal').addEventListener('click', () => openModal('modalNewTransaction'));
-    document.getElementById('btnCloseTxModal').addEventListener('click', () => closeModal('modalNewTransaction'));
-    document.getElementById('btnSubmitTransaction').addEventListener('click', createTransaction);
+    document.getElementById('btnOpenMainModal').addEventListener('click', () => {
+        document.getElementById('inputEditTxId').value = '';
+        document.getElementById('txModalTitle').textContent = "Novo Lançamento";
+        document.getElementById('inputDescription').value = '';
+        document.getElementById('inputAmount').value = '';
+        setFormType('cartao');
+        openModal('modalNewTransaction');
+    });
 
-    // Cliques de Cartões
+    document.getElementById('btnCloseTxModal').addEventListener('click', () => closeModal('modalNewTransaction'));
+    document.getElementById('btnSubmitTransaction').addEventListener('click', saveTransaction);
+    
     document.getElementById('btnOpenAccModal').addEventListener('click', () => openModal('modalNewAccount'));
     document.getElementById('btnCloseAccModal').addEventListener('click', () => closeModal('modalNewAccount'));
     document.getElementById('btnSubmitAccount').addEventListener('click', createAccount);
 
-    // Cliques de Pessoas
-    document.getElementById('btnOpenPerModal').addEventListener('click', () => openModal('modalNewPerson'));
-    document.getElementById('btnClosePerModal').addEventListener('click', () => closeModal('modalNewPerson'));
-    document.getElementById('btnSubmitPerson').addEventListener('click', createPerson);
-
-    // Backup e Limpeza
+    // Sistema de Backup e Limpeza do Estado Original
     document.getElementById('btnBackup').addEventListener('click', () => {
-        const txt = JSON.stringify(getAppState(), null, 2);
-        const a = document.createElement('a');
-        a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(txt));
-        a.setAttribute('download', `compromissos_backup_${new Date().toISOString().split('T')[0]}.txt`);
-        a.click();
+        const out = JSON.stringify(getAppState(), null, 2);
+        const link = document.createElement('a');
+        link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(out));
+        link.setAttribute('download', `compromissos_backup.txt`);
+        link.click();
     });
 
     document.getElementById('btnRestore').addEventListener('click', () => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.txt';
-        input.onchange = (e) => {
+        const f = document.createElement('input'); f.type = 'file'; f.accept = '.txt';
+        f.onchange = (e) => {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
-                    const parsed = JSON.parse(ev.target.result);
-                    parsed.transactions = parsed.transactions.map(t => ({...t, dueDate: new Date(t.dueDate)}));
-                    saveAppState(parsed);
-                    updateUI();
-                    alert('Dados restaurados com sucesso!');
-                } catch(err) { alert('Arquivo inválido.'); }
+                    const res = JSON.parse(ev.target.result);
+                    res.transactions = res.transactions.map(t => ({ ...t, dueDate: new Date(t.dueDate) }));
+                    saveAppState(res); updateUI(); alert('Sucesso!');
+                } catch(err) { alert('Erro.'); }
             };
             reader.readAsText(e.target.files[0]);
         };
-        input.click();
+        f.click();
     });
 
     document.getElementById('btnClear').addEventListener('click', () => {
-        if (confirm('Deseja apagar os lançamentos? Cartões e pessoas continuam salvos.')) {
-            const state = getAppState();
-            state.transactions = [];
-            saveAppState(state);
-            updateUI();
+        if(confirm('Limpar histórico de gastos do mês?')) {
+            const state = getAppState(); state.transactions = []; saveAppState(state); updateUI();
         }
     });
 });
+

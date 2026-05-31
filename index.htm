@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#121212">
-    <meta name="description" content="Controle de Compromissos e Contas a Pagar - PWA para gerenciar despesas com parcelamento inteligente">
+    <meta name="description" content="Controle de Compromissos e Contas a Pagar">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Compromissos">
@@ -17,6 +17,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
@@ -29,125 +30,103 @@
             --accent-dark: #00E89D;
             --danger: #FF4757;
             --border: #2a2a2a;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
         html, body {
             width: 100%;
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            overflow: hidden;
         }
 
         #app {
             display: flex;
             flex-direction: column;
-            height: 100vh;
             width: 100%;
+            min-height: 100vh;
+            padding-bottom: 120px; /* Espaço para o rodapé fixo não cobrir nada */
         }
 
-        /* Header com cards fixos */
+        /* Topo Fixo */
         .header {
-            position: sticky;
-            top: 0;
-            z-index: 40;
             background-color: var(--bg-primary);
             border-bottom: 1px solid var(--border);
             padding: 1rem;
-            space-y: 1rem;
         }
 
-        .header > * + * {
-            margin-top: 1rem;
+        /* Layout de cards responsivo (evita quebrar no mobile) */
+        .summary-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
         }
 
-        /* Card mestre */
-        .card-master {
+        .card-box {
             background-color: var(--bg-secondary);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
+            border-radius: 0.75rem;
+            padding: 1rem;
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
         }
 
-        .card-master-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-bottom: 0.5rem;
+        .card-box.master {
+            border-color: rgba(0, 255, 157, 0.3);
         }
 
-        .card-master-value {
+        .card-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .card-box.master .card-value {
             font-size: 2rem;
-            font-weight: bold;
             color: var(--accent);
         }
 
-        /* Cards secundários */
-        .cards-secondary {
+        /* Sub-grid para os dois cards menores ficarem lado a lado se couber */
+        .sub-cards {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 0.75rem;
         }
 
-        .card-secondary {
-            background-color: var(--bg-secondary);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-
-        .card-secondary-label {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .card-secondary-value {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: var(--text-primary);
-        }
-
-        /* Carrossel de filtros */
+        /* Filtros horizontais */
         .carousel-filters {
             display: flex;
             gap: 0.5rem;
             overflow-x: auto;
-            padding: 0.5rem 0;
-            scroll-behavior: smooth;
+            padding: 0.25rem 0;
+            scrollbar-width: none;
         }
 
         .carousel-filters::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        .carousel-filters::-webkit-scrollbar-track {
-            background: var(--bg-tertiary);
-        }
-
-        .carousel-filters::-webkit-scrollbar-thumb {
-            background: var(--accent);
-            border-radius: 2px;
+            display: none;
         }
 
         .filter-btn {
             flex-shrink: 0;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
             border: 1px solid var(--border);
             background-color: var(--bg-secondary);
             color: var(--text-primary);
             cursor: pointer;
-            white-space: nowrap;
+            font-size: 0.85rem;
+            font-weight: 600;
             transition: all 0.2s ease;
-            font-size: 0.875rem;
-        }
-
-        .filter-btn:hover {
-            border-color: var(--accent);
         }
 
         .filter-btn.active {
@@ -156,23 +135,14 @@
             border-color: var(--accent);
         }
 
-        .filter-btn-amount {
-            display: block;
-            font-size: 0.75rem;
-            opacity: 0.75;
-        }
-
-        /* Conteúdo principal */
+        /* Listagem de contas */
         .content {
-            flex: 1;
-            overflow-y: auto;
             padding: 1rem;
+            flex: 1;
         }
 
-        /* Abas */
         .tabs {
             display: flex;
-            gap: 0;
             border-bottom: 1px solid var(--border);
             margin-bottom: 1rem;
         }
@@ -184,9 +154,10 @@
             background: none;
             color: var(--text-secondary);
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-bottom: 3px solid transparent;
             transition: all 0.2s ease;
-            border-bottom: 2px solid transparent;
         }
 
         .tab-button.active {
@@ -194,32 +165,29 @@
             border-bottom-color: var(--accent);
         }
 
-        /* Lista de transações */
         .transaction-list {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
 
         .transaction-item {
             background-color: var(--bg-secondary);
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             padding: 1rem;
             border: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 1rem;
-            transition: all 0.2s ease;
         }
 
         .transaction-item.paid {
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
         .transaction-item.paid .transaction-description {
             text-decoration: line-through;
-            color: var(--text-secondary);
         }
 
         .transaction-info {
@@ -228,42 +196,35 @@
         }
 
         .transaction-description {
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-primary);
-            word-break: break-word;
+            font-size: 1rem;
+            margin-bottom: 0.15rem;
         }
 
         .transaction-details {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-top: 0.25rem;
         }
 
         .transaction-amount {
-            font-weight: bold;
+            font-weight: 700;
             color: var(--accent);
-            font-size: 1.125rem;
-            min-width: max-content;
+            font-size: 1.1rem;
         }
 
         .transaction-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
+            padding: 0.5rem 0.8rem;
+            border-radius: 0.5rem;
             border: none;
             cursor: pointer;
-            font-weight: 500;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-            white-space: nowrap;
+            font-weight: 600;
+            font-size: 0.8rem;
         }
 
         .transaction-btn.pay {
             background-color: var(--accent);
             color: var(--bg-primary);
-        }
-
-        .transaction-btn.pay:hover {
-            background-color: var(--accent-dark);
         }
 
         .transaction-btn.paid {
@@ -273,74 +234,70 @@
 
         .empty-state {
             text-align: center;
-            padding: 2rem;
+            padding: 3rem 1rem;
             color: var(--text-secondary);
+            font-size: 0.9rem;
         }
 
-        /* Rodapé */
+        /* Rodapé Fixo e Colado Embaixo */
         .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(8px);
             border-top: 1px solid var(--border);
-            background-color: var(--bg-secondary);
-            padding: 1rem;
+            padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+            z-index: 100;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
         }
 
         .footer-buttons {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .btn-primary {
             width: 100%;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+            padding: 0.85rem;
+            border-radius: 0.75rem;
             border: none;
             background-color: var(--accent);
             color: var(--bg-primary);
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
             font-size: 1rem;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--accent-dark);
-            transform: scale(0.98);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.97);
+            box-shadow: 0 4px 10px rgba(0, 255, 157, 0.2);
         }
 
         .footer-actions {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 0.5rem;
-            margin-top: 0.5rem;
         }
 
         .btn-secondary {
             padding: 0.5rem;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             border: 1px solid var(--border);
             background-color: var(--bg-primary);
             color: var(--text-primary);
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 0.75rem;
-            transition: all 0.2s ease;
+            text-align: center;
         }
 
-        .btn-secondary:hover {
-            background-color: var(--bg-tertiary);
-        }
-
-        .btn-danger {
+        .btn-secondary.btn-danger {
             border-color: var(--danger);
             color: var(--danger);
         }
 
-        /* Modal */
+        /* Janelas Modais */
         .modal {
             display: none;
             position: fixed;
@@ -348,8 +305,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 50;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 200;
             align-items: flex-end;
         }
 
@@ -360,37 +317,28 @@
         .modal-content {
             background-color: var(--bg-secondary);
             width: 100%;
-            border-radius: 1rem 1rem 0 0;
+            border-radius: 1.5rem 1.5rem 0 0;
             padding: 1.5rem;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
+            position: relative;
         }
 
         .modal-header {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            padding-right: 2rem;
         }
 
         .modal-close {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            top: 1.25rem;
+            right: 1.25rem;
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             cursor: pointer;
         }
 
@@ -400,101 +348,81 @@
 
         .form-label {
             display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-primary);
-            font-weight: 500;
-            font-size: 0.875rem;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
         }
 
-        .form-input,
-        .form-select {
+        .form-input, .form-select {
             width: 100%;
             padding: 0.75rem;
-            border-radius: 0.375rem;
+            border-radius: 0.5rem;
             border: 1px solid var(--border);
             background-color: var(--bg-primary);
             color: var(--text-primary);
             font-size: 1rem;
-            font-family: inherit;
-        }
-
-        .form-input:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.1);
         }
 
         .form-checkbox {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-bottom: 1rem;
+            margin: 1rem 0;
         }
 
         .form-checkbox input {
-            width: 1.25rem;
-            height: 1.25rem;
-            cursor: pointer;
+            width: 1.2rem;
+            height: 1.2rem;
             accent-color: var(--accent);
-        }
-
-        /* Responsive */
-        @media (max-width: 640px) {
-            .cards-secondary {
-                grid-template-columns: 1fr;
-            }
-
-            .footer-actions {
-                grid-template-columns: 1fr 1fr 1fr;
-            }
         }
     </style>
 </head>
 <body>
+
     <div id="app">
-        <!-- Header com cards fixos -->
+        <!-- Parte Superior do App -->
         <div class="header">
-            <div class="card-master">
-                <div class="card-master-label">TOTAL COMPROMISSOS DO MÊS</div>
-                <div class="card-master-value" id="totalCurrentMonth">R$ 0,00</div>
+            <div class="summary-grid">
+                <div class="card-box master">
+                    <div class="card-label">Total do Mês Atual</div>
+                    <div class="card-value" id="totalCurrentMonth">R$ 0,00</div>
+                </div>
+                <div class="sub-cards">
+                    <div class="card-box">
+                        <div class="card-label">Próximo Mês</div>
+                        <div class="card-value" id="totalNextMonth">R$ 0,00</div>
+                    </div>
+                    <div class="card-box">
+                        <div class="card-label">Subsequente</div>
+                        <div class="card-value" id="totalMonthAfterNext">R$ 0,00</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="cards-secondary">
-                <div class="card-secondary">
-                    <div class="card-secondary-label">PRÓXIMO MÊS</div>
-                    <div class="card-secondary-value" id="totalNextMonth">R$ 0,00</div>
-                </div>
-                <div class="card-secondary">
-                    <div class="card-secondary-label">MÊS SUBSEQUENTE</div>
-                    <div class="card-secondary-value" id="totalMonthAfterNext">R$ 0,00</div>
-                </div>
-            </div>
-
+            <!-- Filtros Rápidos -->
             <div class="carousel-filters" id="carouselFilters">
-                <button class="filter-btn active" data-filter="all">
-                    Todas
-                </button>
+                <!-- Injetado via Javascript -->
             </div>
         </div>
 
-        <!-- Conteúdo principal -->
+        <!-- Conteúdo do Meio -->
         <div class="content">
             <div class="tabs">
-                <button class="tab-button active" data-tab="pending">PENDENTES</button>
-                <button class="tab-button" data-tab="paid">PAGAS</button>
-                <button class="tab-button" data-tab="all">TUDO</button>
+                <button class="tab-button active" id="tabPending" onclick="switchTab('pending')">PENDENTES</button>
+                <button class="tab-button" id="tabPaid" onclick="switchTab('paid')">PAGAS</button>
+                <button class="tab-button" id="tabAll" onclick="switchTab('all')">TUDO</button>
             </div>
 
             <div id="transactionList" class="transaction-list">
-                <div class="empty-state">Nenhuma transação</div>
+                <div class="empty-state">Nenhuma transação cadastrada.</div>
             </div>
         </div>
 
-        <!-- Rodapé -->
+        <!-- Menu de Ações Inferior -->
         <div class="footer">
             <div class="footer-buttons">
-                <button class="btn-primary" id="btnNewTransaction">+ NOVA CONTA</button>
+                <button class="btn-primary" id="btnOpenMainModal">+ NOVA CONTA</button>
                 <div class="footer-actions">
                     <button class="btn-secondary" id="btnBackup">💾 Backup</button>
                     <button class="btn-secondary" id="btnRestore">📂 Restaurar</button>
@@ -504,105 +432,97 @@
         </div>
     </div>
 
-    <!-- Modal de Nova Transação -->
+    <!-- 1. MODAL PRINCIPAL: NOVO LANÇAMENTO -->
     <div class="modal" id="modalNewTransaction">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('modalNewTransaction')">✕</button>
+            <button class="modal-close" id="btnCloseTxModal">✕</button>
             <div class="modal-header">Novo Lançamento</div>
 
             <div class="form-group">
-                <label class="form-label">Onde foi o gasto?</label>
-                <select class="form-select" id="selectAccount">
-                    <option value="">Selecione uma conta</option>
-                </select>
-                <button class="btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="openModal('modalNewAccount')">+ Cadastrar Novo Cartão</button>
+                <label class="form-label">Onde foi o gasto? (Cartão/Conta)</label>
+                <select class="form-select" id="selectAccount"></select>
+                <button class="btn-secondary" style="width: 100%; margin-top: 0.5rem; padding: 0.6rem;" id="btnOpenAccModal">+ Cadastrar Novo Cartão</button>
             </div>
 
             <div class="form-group">
-                <label class="form-label">Descrição</label>
-                <input type="text" class="form-input" id="inputDescription" placeholder="Ex: Compras no supermercado">
+                <label class="form-label">Descrição do Gasto</label>
+                <input type="text" class="form-input" id="inputDescription" placeholder="Ex: Mercado, Combustível...">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Valor Total</label>
-                <input type="number" class="form-input" id="inputAmount" placeholder="0.00" step="0.01" min="0">
+                <input type="number" class="form-input" id="inputAmount" placeholder="0.00" step="0.01">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Parcelas</label>
+                <label class="form-label">Quantidade de Parcelas</label>
                 <select class="form-select" id="selectInstallments">
                     <option value="1">À vista</option>
-                    <option value="2">2x</option>
-                    <option value="3">3x</option>
-                    <option value="4">4x</option>
-                    <option value="5">5x</option>
-                    <option value="6">6x</option>
-                    <option value="7">7x</option>
-                    <option value="8">8x</option>
-                    <option value="9">9x</option>
-                    <option value="10">10x</option>
-                    <option value="11">11x</option>
+                    <option value="2">2x</option><option value="3">3x</option>
+                    <option value="4">4x</option><option value="5">5x</option>
+                    <option value="6">6x</option><option value="7">7x</option>
+                    <option value="8">8x</option><option value="9">9x</option>
+                    <option value="10">10x</option><option value="11">11x</option>
                     <option value="12">12x</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label class="form-label">Quem gastou?</label>
-                <select class="form-select" id="selectPerson">
-                    <option value="">Selecione uma pessoa</option>
-                </select>
-                <button class="btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="openModal('modalNewPerson')">+ Cadastrar Nova Pessoa</button>
+                <select class="form-select" id="selectPerson"></select>
+                <button class="btn-secondary" style="width: 100%; margin-top: 0.5rem; padding: 0.6rem;" id="btnOpenPerModal">+ Cadastrar Nova Pessoa</button>
             </div>
 
             <div class="form-checkbox">
                 <input type="checkbox" id="checkRecurring">
-                <label for="checkRecurring">Conta Fixa (Mensal)</label>
+                <label for="checkRecurring">Conta Fixa Todo Mês</label>
             </div>
 
-            <button class="btn-primary" onclick="createTransaction()" style="margin-top: 1rem;">Criar Lançamento</button>
+            <button class="btn-primary" id="btnSubmitTransaction" style="margin-top: 0.5rem;">Salvar Lançamento</button>
         </div>
     </div>
 
-    <!-- Modal de Nova Conta -->
+    <!-- 2. MODAL NOVO CARTÃO -->
     <div class="modal" id="modalNewAccount">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('modalNewAccount')">✕</button>
-            <div class="modal-header">Novo Cartão/Conta</div>
+            <button class="modal-close" id="btnCloseAccModal">✕</button>
+            <div class="modal-header">Cadastrar Cartão ou Conta</div>
 
             <div class="form-group">
-                <label class="form-label">Nome</label>
-                <input type="text" class="form-input" id="inputAccountName" placeholder="Ex: Visa Casas Bahia">
+                <label class="form-label">Nome do Cartão/Banco</label>
+                <input type="text" class="input-field form-input" id="inputAccountName" placeholder="Ex: Nubank Daniela, Visa">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Dia de Fechamento</label>
-                <input type="number" class="form-input" id="inputClosingDay" placeholder="25" min="1" max="31">
+                <label class="form-label">Dia de Fechamento da Fatura</label>
+                <input type="number" class="form-input" id="inputClosingDay" placeholder="Ex: 25" min="1" max="31">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Dia de Vencimento</label>
-                <input type="number" class="form-input" id="inputDueDay" placeholder="5" min="1" max="31">
+                <label class="form-label">Dia de Vencimento da Fatura</label>
+                <input type="number" class="form-input" id="inputDueDay" placeholder="Ex: 5" min="1" max="31">
             </div>
 
-            <button class="btn-primary" onclick="createAccount()">Criar Conta</button>
+            <button class="btn-primary" id="btnSubmitAccount">Criar Cartão</button>
         </div>
     </div>
 
-    <!-- Modal de Nova Pessoa -->
+    <!-- 3. MODAL NOVA PESSOA -->
     <div class="modal" id="modalNewPerson">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeModal('modalNewPerson')">✕</button>
-            <div class="modal-header">Nova Pessoa</div>
+            <button class="modal-close" id="btnClosePerModal">✕</button>
+            <div class="modal-header">Adicionar Nova Pessoa</div>
 
             <div class="form-group">
-                <label class="form-label">Nome</label>
-                <input type="text" class="form-input" id="inputPersonName" placeholder="Ex: João">
+                <label class="form-label">Nome da Pessoa</label>
+                <input type="text" class="input-field form-input" id="inputPersonName" placeholder="Ex: Rogério, Isabelli">
             </div>
 
-            <button class="btn-primary" onclick="createPerson()">Adicionar Pessoa</button>
+            <button class="btn-primary" id="btnSubmitPerson">Adicionar</button>
         </div>
     </div>
 
     <script src="app.js"></script>
 </body>
 </html>
+

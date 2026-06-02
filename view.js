@@ -1,23 +1,20 @@
-// js/view.js
+// view.js
 import { formatDate } from './dateUtils.js';
 
 /**
  * Desenha os balões de rateio e resumos no topo da tela.
- * Altera o antigo balão "Casa" para "Contas Consumo".
  */
 export function renderizarTotais(containerId, dadosDoMes) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Valores fictícios ou calculados que virão do app.js posteriormente
     const totalCartao = dadosDoMes.totalCartao || 0;
     const totalEmprestimo = dadosDoMes.totalEmprestimo || 0;
     const totalConsumo = dadosDoMes.totalConsumo || 0;
 
     container.innerHTML = `
-        <!-- Grid de Balões Modernos -->
         <div class="grid grid-cols-3 gap-3 text-center">
-            <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-2xl active:scale-95 transition-all" onclick="alert('Detalhes dos Cartões em breve!')">
+            <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-2xl">
                 <span class="text-xs text-zinc-400 block mb-1">💳 Cartões</span>
                 <span class="text-sm font-bold text-amber-500">R$ ${totalCartao.toFixed(2)}</span>
             </div>
@@ -34,8 +31,7 @@ export function renderizarTotais(containerId, dadosDoMes) {
 }
 
 /**
- * Desenha a lista de compromissos do mês (~20 linhas no máximo).
- * Consolida compras repetidas do mesmo cartão e adiciona a Lupa 🔍.
+ * Desenha a lista de compromissos do mês com correção nos alvos de clique.
  */
 export function renderizarHistorico(containerId, lancamentos, aoPagar, aoClicarNaLupa) {
     const container = document.getElementById(containerId);
@@ -57,7 +53,6 @@ export function renderizarHistorico(containerId, lancamentos, aoPagar, aoClicarN
         const div = document.createElement('div');
         div.className = "bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 flex items-center justify-between transition-all";
         
-        // Define a cor de destaque baseada no tipo de lançamento
         let badgeColor = "text-zinc-400 bg-zinc-800";
         if (item.tipo === 'cartao') badgeColor = "text-amber-400 bg-amber-500/10";
         if (item.tipo === 'emprestimo') badgeColor = "text-red-400 bg-red-500/10";
@@ -65,7 +60,7 @@ export function renderizarHistorico(containerId, lancamentos, aoPagar, aoClicarN
 
         div.innerHTML = `
             <div class="flex items-center space-x-3">
-                <!-- Botão da Lupa 🔍 -->
+                <!-- Botão da Lupa com data-index garantido -->
                 <button class="btn-lupa text-lg p-1 active:scale-125 transition-all" data-index="${index}">🔍</button>
                 <div>
                     <div class="flex items-center space-x-2">
@@ -78,7 +73,6 @@ export function renderizarHistorico(containerId, lancamentos, aoPagar, aoClicarN
             
             <div class="flex items-center space-x-3">
                 <span class="text-sm font-semibold text-zinc-100">R$ ${Number(item.valor).toFixed(2)}</span>
-                <!-- Botão Pagar (Seta para pular para a aba pagas) -->
                 <button class="btn-pagar bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-xs font-medium active:scale-90 transition-all" data-index="${index}">
                     Pagar
                 </button>
@@ -88,40 +82,39 @@ export function renderizarHistorico(containerId, lancamentos, aoPagar, aoClicarN
         listaItens.appendChild(div);
     });
 
-    // Configura os cliques nos botões de Pagar e Lupa de forma cirúrgica
+    // CORREÇÃO DOS CLIQUES: Agora usando .closest para não errar o alvo
     container.querySelectorAll('.btn-pagar').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const idx = e.target.getAttribute('data-index');
+            const botaoCorreto = e.target.closest('.btn-pagar');
+            const idx = botaoCorreto.getAttribute('data-index');
             aoPagar(idx);
         });
     });
 
     container.querySelectorAll('.btn-lupa').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const idx = e.target.getAttribute('data-index');
+            const botaoCorreto = e.target.closest('.btn-lupa');
+            const idx = botaoCorreto.getAttribute('data-index');
             aoClicarNaLupa(lancamentos[idx]);
         });
     });
 }
 
 /**
- * Abre a janela de detalhes (Modal) baseada no tipo de item clicado.
+ * Abre a janela de detalhes (Modal)
  */
 export function abrirModalDetalhes(item) {
-    // Cria a casca do modal de forma dinâmica na tela
     const modal = document.createElement('div');
-    modal.className = "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in";
+    modal.className = "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50";
     
     let conteudoEspecifico = '';
 
-    // Inteligência da Lupa mudando conforme o tipo
     if (item.tipo === 'cartao') {
         conteudoEspecifico = `
             <p class="text-xs text-zinc-400 mb-4">Aqui você verá o pergaminho de lançamentos deste cartão.</p>
             <div class="bg-zinc-950 p-3 rounded-xl border border-zinc-800 text-sm max-h-40 overflow-y-auto space-y-2">
-                <!-- Exemplo de como as compras individuais vão aparecer para exclusão -->
                 <div class="flex justify-between items-center border-b border-zinc-900 pb-1.5">
-                    <span>Compra Exemplo</span>
+                    <span>Compra de Teste</span>
                     <button class="text-red-400 text-xs font-semibold" onclick="alert('Excluir item?')">Excluir</button>
                 </div>
             </div>
@@ -155,12 +148,9 @@ export function abrirModalDetalhes(item) {
                 </div>
                 <button id="fechar-modal" class="text-zinc-500 hover:text-zinc-300 text-lg">✕</button>
             </div>
-            
             <hr class="border-zinc-800">
-            
             ${conteudoEspecifico}
-            
-            <button id="salvar-modal" class="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-xl text-sm font-medium transition-all active:scale-95">
+            <button id="salvar-modal" class="w-full bg-emerald-600 hover:bg-emerald-500 text-zinc-50 py-3 rounded-xl text-sm font-medium transition-all active:scale-95 mt-2">
                 Confirmar / Fechar
             </button>
         </div>
@@ -168,8 +158,8 @@ export function abrirModalDetalhes(item) {
 
     document.body.appendChild(modal);
 
-    // Eventos para fechar o modal e tirá-lo da tela
     const fechar = () => document.body.removeChild(modal);
     modal.querySelector('#fechar-modal').addEventListener('click', fechar);
     modal.querySelector('#salvar-modal').addEventListener('click', fechar);
 }
+ 

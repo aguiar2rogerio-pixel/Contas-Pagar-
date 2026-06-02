@@ -1,68 +1,89 @@
-// js/storage.js
+// storage.js - Central de inteligência de dados (Nosso Contexto)
+const NomeChaveStorage = 'dados_financeiros_daniela';
 
-// Chaves que usaremos para salvar as coisas no celular
-const CHAVE_COMPROMISSOS = 'compromissos_dados';
-const CHAVE_CONFIGURACOES = 'compromissos_config';
+const dadosIniciais = {
+    lancamentos: [
+        { id: 1, tipo: 'cartao', cartaoNome: 'Nu Bank Daniela', descricao: 'Supermercado', valor: 150.00, vencimento: '2026-06-10', responsavel: 'Daniela', status: 'pendente' },
+        { id: 2, tipo: 'cartao', cartaoNome: 'Nu Bank Daniela', descricao: 'Farmácia', valor: 300.00, vencimento: '2026-06-10', responsavel: 'Casa', status: 'pendente' },
+        { id: 3, tipo: 'cartao', cartaoNome: 'Casas Bahia Visa', descricao: 'Geladeira 1/10', valor: 120.00, vencimento: '2026-06-15', responsavel: 'Casa', status: 'pendente' },
+        { id: 4, tipo: 'emprestimo', descricao: 'Empréstimo Bradesco', valor: 1200.00, valorTotalEmprestimo: 12000.00, valorPagoAteAgora: 5000.00, vencimento: '2026-06-15', responsavel: 'Casa', status: 'pendente' },
+        { id: 5, tipo: 'consumo', descricao: 'Conta de Luz EDP', valor: 185.30, vencimento: '2026-06-22', responsavel: 'Casa', status: 'pendente' }
+    ]
+};
 
-/**
- * Carrega todos os dados guardados no celular. 
- * Se for a primeira vez usando, ele cria uma estrutura vazia padrão.
- */
-export function carregarDados() {
-    const dados = localStorage.getItem(CHAVE_COMPROMISSOS);
-    if (!dados) {
+export const FinanceiroContext = {
+    state: JSON.parse(localStorage.getItem(NomeChaveStorage)) || dadosIniciais,
+
+    salvar() {
+        localStorage.setItem(NomeChaveStorage, JSON.stringify(this.state));
+    },
+
+    obterLancamentos(status = 'pendente') {
+        return this.state.lancamentos.filter(l => l.status === status);
+    },
+
+    obterHistoricoAgrupado(status = 'pendente') {
+        const itensFiltrados = this.obterLancamentos(status);
+        const agrupado = [];
+
+        itensFiltrados.forEach(item => {
+            if (item.tipo === 'cartao') {
+                const cartaoExistente = agrupado.find(c => c.tipo === 'cartao' && c.cartaoNome === item.cartaoNome);
+                if (cartaoExistente) {
+                    cartaoExistente.valor += Number(item.valor);
+                    cartaoExistente.idsAgrupados.push(item.id);
+                } else {
+                    agrupado.push({
+                        ...item,
+                        descricao: item.cartaoNome,
+                        idsAgrupados: [item.id]
+                    });
+                }
+            } else {
+                agrupado.push({ ...item, idsAgrupados: [item.id] });
+            }
+        });
+        return agrupado;
+    },
+
+    CalcularTotaisDoMes() {
+        const pendentes = this.obterLancamentos('pendente');
         return {
-            lancamentos: [], // Onde ficam as ~20 linhas por mês, empréstimos, etc.
-            categoriasCartoes: ['Casas Bahia Visa', 'Nu Bank Mastercard'] // Lista de cartões padrão
+            cartao: pendentes.filter(l => l.tipo === 'cartao').reduce((acc, curr) => acc + Number(curr.valor), 0),
+            emprestimo: pendentes.filter(l => l.tipo === 'emprestimo').reduce((acc, curr) => acc + Number(curr.valor), 0),
+            consumo: pendentes.filter(l => l.tipo === 'consumo').reduce((acc, curr) => acc + Number(curr.valor), 0),
         };
-    }
-    return JSON.parse(dados);
-}
+    },
 
-/**
- * Salva permanentemente todos os lançamentos e cartões no celular.
- */
-export function salvarDados(novosDados) {
-    localStorage.setItem(CHAVE_COMPROMISSOS, JSON.stringify(novosDados));
-}
+    CalcularRateioResumido() {
+        const pendentes = this.obterLancamentos('pendente');
+        const rateio = { Casa: 0, Daniela: 0, Rogerio: 0, Isabelli: 0, Stephanie: 0 };
+        pendentes.forEach(l => {
+            if (rateio[l.responsavel] !== undefined) {
+                rateio[l.responsavel] += Number(l.valor);
+            }
+        });
+        return rateio;
+    },
 
-/**
- * 💾 Função de Backup: Transforma todo o histórico do app em um arquivo de texto
- * e faz o celular baixar automaticamente.
- */
-export function exportarBackup() {
-    const dados = localStorage.getItem(CHAVE_COMPROMISSOS);
-    if (!dados) {
-        alert('Nenhum dado encontrado para exportar!');
-        return;
-    }
-    
-    const blob = new Blob([dados], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `backup_compromissos_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+    marcarComoPago(ids) {
+        this.state.lancamentos = this.state.lancamentos.map(l => {
+            if (ids.includes(l.id)) l.status = 'paga';
+            return l;
+        });
+        this.salvar();
+    },
 
-/**
- * 📂 Função de Restaurar: Recebe o arquivo de texto do backup e
- * reescreve o histórico do aplicativo, trazendo tudo de volta.
- */
-export function importarBackup(arquivoTexto) {
-    try {
-        // Valida se o arquivo é um JSON válido antes de salvar
-        const testarDados = JSON.parse(arquivoTexto);
-        if (testarDados.lancamentos && testarDados.categoriasCartoes) {
-            localStorage.setItem(CHAVE_COMPROMISSOS, arquivoTexto);
-            return true;
-        }
-        return false;
-    } catch (e) {
-        console.error('Erro ao importar backup:', e);
-        return false;
+    excluirLancamento(id) {
+        this.state.lancamentos = this.state.lancamentos.filter(l => l.id !== id);
+        this.salvar();
+    },
+
+    atualizarValorConsumo(id, novoValor) {
+        this.state.lancamentos = this.state.lancamentos.map(l => {
+            if (l.id === id) l.valor = Number(novoValor);
+            return l;
+        });
+        this.salvar();
     }
-}
+};

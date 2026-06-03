@@ -1,5 +1,5 @@
 // =================================================================
-// CalculoFinanceiro.js - Processamento de Datas Automatizado
+// CalculoFinanceiro.js - Motor Inteligente de Cálculos (Versão Corrigida)
 // =================================================================
 
 const CalculoFinanceiro = {
@@ -37,24 +37,35 @@ const CalculoFinanceiro = {
         let itensDoMes = [];
 
         lancamentos.forEach(gasto => {
+            // Calcula a distância de meses entre o início do gasto e o mês visualizado na tela
             const mesesDecorridos = (anoAlvo - gasto.anoInicio) * 12 + (mesAlvo - gasto.mesInicio);
             
+            // Se a parcela pertence a este mês
             if (mesesDecorridos >= 0 && mesesDecorridos < gasto.parcelas) {
                 const valorDaParcela = gasto.valorTotal / gasto.parcelas;
                 const parcelaAtual = mesesDecorridos + 1;
 
                 totalGeral += valorDaParcela;
 
-                if (!rateioPorResponsavel[gasto.responsavel]) {
-                    rateioPorResponsavel[gasto.responsavel] = 0;
+                // Divide o valor para o responsável correto
+                const resp = gasto.responsavel || 'Casa';
+                if (!rateioPorResponsavel[resp]) {
+                    rateioPorResponsavel[resp] = 0;
                 }
-                rateioPorResponsavel[gasto.responsavel] += valorDaParcela;
+                rateioPorResponsavel[resp] += valorDaParcela;
 
+                // Se for cartão, acumula na fatura dele
                 if (gasto.tipo === 'cartao' && gasto.cartaoNome) {
                     if (!faturasCartoes[gasto.cartaoNome]) {
                         faturasCartoes[gasto.cartaoNome] = 0;
                     }
                     faturasCartoes[gasto.cartaoNome] += valorDaParcela;
+                }
+
+                // Garante que o dia de vencimento exista para não quebrar a ordenação
+                let diaVenc = parseInt(gasto.diaVencimento);
+                if (isNaN(diaVenc) || diaVenc < 1 || diaVenc > 31) {
+                    diaVenc = 10; // Padrão caso esteja vazio
                 }
 
                 itensDoMes.push({
@@ -64,13 +75,14 @@ const CalculoFinanceiro = {
                     valorParcela: valorDaParcela,
                     parcelaAtual: parcelaAtual,
                     parcelasTotais: gasto.parcelas,
-                    responsavel: gasto.responsavel,
+                    responsavel: resp,
                     cartaoNome: gasto.cartaoNome || '',
-                    diaVencimento: gasto.diaVencimento || 10
+                    diaVencimento: diaVenc
                 });
             }
         });
 
+        // Ordena a lista do mês pelo dia do vencimento (do menor pro maior)
         itensDoMes.sort((a, b) => a.diaVencimento - b.diaVencimento);
 
         return {
@@ -81,4 +93,3 @@ const CalculoFinanceiro = {
         };
     }
 };
-

@@ -1,128 +1,111 @@
 // =================================================================
-// Historico.js - Renderização de Listas, Faturas e Rateio na Tela
+// Historico.js - Atualização do Painel Principal por Vencimentos
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. DATA CONTROL (Inicia no mês e ano atuais)
-    let dataAtual = new Date();
-    let mesAtual = dataAtual.getMonth(); // 0 = Janeiro, 5 = Junho...
-    let anoAtual = dataAtual.getFullYear();
+    const textoMesAno = document.getElementById('filtro-mes-ano');
+    const btnMesAnterior = document.getElementById('btn-mes-anterior');
+    const btnMesSeguinte = document.getElementById('btn-mes-seguinte');
+    
+    const labelTotalGeral = document.getElementById('total-geral-mes');
+    const listaPrioridades = document.getElementById('lista-prioridades-contas');
+    const containerRateio = document.getElementById('container-cards-rateio');
 
     const nomesMeses = [
-        "JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
-        "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
     ];
 
-    // Elementos do Topo
-    const txtMesAtual = document.getElementById('mes-atual');
-    const btnAnterior = document.getElementById('btn-mes-anterior');
-    const btnProximo = document.getElementById('btn-mes-proximo');
-    const txtTotalGeral = document.getElementById('total-geral-mes');
+    let dataControlador = new Date();
+    let mesAtual = dataControlador.getMonth();
+    let anoAtual = dataControlador.getFullYear();
 
-    // Elementos das Abas
-    const listaPrioridades = document.getElementById('lista-prioridades');
-    const listaFaturas = document.getElementById('lista-faturas-cartoes');
-    const gradeRateio = document.getElementById('grade-rateio');
-
-    // 2. FUNÇÃO PRINCIPAL: ATUALIZAR A INTERFACE
-    function atualizarInterface() {
-        // Atualiza o texto do topo (Ex: JUNHO 2026)
-        txtMesAtual.textContent = `${nomesMeses[mesAtual]} ${anoAtual}`;
-
-        // Puxa os dados mastigados do motor matemático
-        const resumo = CalculoFinanceiro.calcularResumoDoMes(mesAtual, anoAtual);
-
-        // A. Atualiza o Total Geral do Mês
-        txtTotalGeral.textContent = `R$ ${resumo.totalGeral.toFixed(2).replace('.', ',')}`;
-
-        // B. Desenha a Lista de Contas (Aba 1)
-        listaPrioridades.innerHTML = '';
-        if (resumo.listaContas.length === 0) {
-            listaPrioridades.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhuma conta para este mês.</div>`;
-        } else {
-            resumo.listaContas.forEach(item => {
-                const tipoIcone = item.tipo === 'cartao' ? '💳' : item.tipo === 'emprestimo' ? '🏦' : '📄';
-                const subTexto = item.tipo === 'cartao' ? `${item.cartaoNome} • Parcela ${item.parcelaAtual}/${item.parcelasTotais}` : `Parcela ${item.parcelaAtual}/${item.parcelasTotais}`;
-                
-                listaPrioridades.innerHTML += `
-                    <div class="card-item">
-                        <div>
-                            <span style="font-size: 16px; font-weight: bold; display: block;">${tipoIcone} ${item.descricao}</span>
-                            <span style="font-size: 12px; color: #B3B3B3;">${subTexto} [${item.responsavel}]</span>
-                        </div>
-                        <div style="font-size: 16px; font-weight: bold; color: #FFF;">
-                            R$ ${item.valorParcela.toFixed(2).replace('.', ',')}
-                        </div>
-                    </div>
-                `;
-            });
+    function atualizarPainelVisual() {
+        if (textoMesAno) {
+            textoMesAno.innerText = `${nomesMeses[mesAtual]} de ${anoAtual}`;
         }
 
-        // C. Desenha as Faturas dos Cartões (Aba 1)
-        listaFaturas.innerHTML = '';
-        const marcasCartoes = Object.keys(resumo.cartoes);
-        if (marcasCartoes.length === 0) {
-            listaFaturas.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhuma fatura de cartão.</div>`;
-        } else {
-            marcasCartoes.forEach(cartao => {
-                listaFaturas.innerHTML += `
-                    <div class="card-item">
-                        <span style="font-size: 16px; font-weight: bold;">💳 Fatura ${cartao}</span>
-                        <span style="font-size: 16px; font-weight: bold; color: #00E676;">
-                            R$ ${resumo.cartoes[cartao].toFixed(2).replace('.', ',')}
-                        </span>
-                    </div>
-                `;
-            });
+        let resumo = { totalGeral: 0, rateio: {}, cartoes: {}, listaContas: [] };
+
+        if (typeof CalculoFinanceiro !== 'undefined') {
+            resumo = CalculoFinanceiro.calcularResumoDoMes(mesAtual, anoAtual);
         }
 
-        // D. Desenha os Blocos de Rateio por Responsável (Aba 2)
-        gradeRateio.innerHTML = '';
-        const responsaveis = Object.keys(resumo.rateio);
-        if (responsaveis.length === 0) {
-            gradeRateio.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhum rateio gerado.</div>`;
-        } else {
-            responsaveis.forEach(resp => {
-                gradeRateio.innerHTML += `
-                    <div class="card-item" style="border-left: 4px solid #00E676;">
-                        <div>
-                            <span style="font-size: 16px; font-weight: bold; display: block;">👤 ${resp}</span>
-                            <span style="font-size: 12px; color: #B3B3B3;">Total de responsabilidade</span>
+        if (labelTotalGeral) {
+            labelTotalGeral.innerText = `R$ ${resumo.totalGeral.toFixed(2).replace('.', ',')}`;
+        }
+
+        // Renderiza lista de contas cronológica
+        if (listaPrioridades) {
+            listaPrioridades.innerHTML = '';
+            if (resumo.listaContas.length === 0) {
+                listaPrioridades.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhuma conta registrada para este mês.</div>`;
+            } else {
+                resumo.listaContas.forEach(item => {
+                    const icone = item.tipo === 'cartao' ? '💳' : item.tipo === 'emprestimo' ? '🏦' : '📄';
+                    
+                    let detalhes = '';
+                    if (item.tipo === 'cartao') {
+                        detalhes = `${item.cartaoNome} • Parcela ${item.parcelaAtual}/${item.parcelasTotais}`;
+                    } else if (item.tipo === 'emprestimo') {
+                        detalhes = `Parcela ${item.parcelaAtual}/${item.parcelasTotais}`;
+                    } else {
+                        detalhes = `Conta de Consumo`;
+                    }
+
+                    listaPrioridades.innerHTML += `
+                        <div class="card-item" style="border-left: 3px solid #2C2C2C; padding: 12px; margin-bottom: 10px; background-color: #1E1E1E; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 15px; font-weight: bold; display: block; color: #FFF;">${icone} ${item.descricao}</span>
+                                <span style="font-size: 12px; color: #00E676; font-weight: bold;">Vencimento: Dia ${item.diaVencimento}</span>
+                                <span style="font-size: 11px; color: #888; display: block; margin-top: 2px;">${detalhes} • [${item.responsavel}]</span>
+                            </div>
+                            <div style="font-size: 16px; font-weight: bold; color: #FFF;">
+                                R$ ${item.valorParcela.toFixed(2).replace('.', ',')}
+                            </div>
                         </div>
-                        <div style="font-size: 18px; font-weight: bold; color: #00E676;">
-                            R$ ${resumo.rateio[resp].toFixed(2).replace('.', ',')}
+                    `;
+                });
+            }
+        }
+
+        // Renderiza o painel de Rateio (Aba 2)
+        if (containerRateio) {
+            containerRateio.innerHTML = '';
+            const chaves = Object.keys(resumo.rateio);
+            if (chaves.length === 0) {
+                containerRateio.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Sem dados de divisão este mês.</div>`;
+            } else {
+                chaves.forEach(resp => {
+                    const val = resumo.rateio[resp];
+                    containerRateio.innerHTML += `
+                        <div class="card-item" style="padding: 15px; margin-bottom: 10px; background-color: #1E1E1E; border-radius: 8px; display: flex; justify-content: space-between;">
+                            <span style="font-weight: bold; color: #FFF;">👤 ${resp}</span>
+                            <span style="font-weight: bold; color: #00E676;">R$ ${val.toFixed(2).replace('.', ',')}</span>
                         </div>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            }
         }
     }
 
-    // 3. CONTROLE DOS BOTÕES DE MUDANÇA DE MÊS
-    btnAnterior.addEventListener('click', () => {
-        if (mesAtual === 0) {
-            mesAtual = 11;
-            anoAtual--;
-        } else {
+    if (btnMesAnterior) {
+        btnMesAnterior.addEventListener('click', () => {
             mesAtual--;
-        }
-        atualizarInterface();
-    });
+            if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+            atualizarPainelVisual();
+        });
+    }
 
-    btnProximo.addEventListener('click', () => {
-        if (mesAtual === 11) {
-            mesAtual = 0;
-            anoAtual++;
-        } else {
+    if (btnMesSeguinte) {
+        btnMesSeguinte.addEventListener('click', () => {
             mesAtual++;
-        }
-        atualizarInterface();
-    });
+            if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+            atualizarPainelVisual();
+        });
+    }
 
-    // Executa a primeira renderização ao abrir o app
-    atualizarInterface();
-
-    // Torna a função disponível globalmente para que outros arquivos (como o de lançamento) possam atualizar a tela
-    window.atualizarTelaFinanceira = atualizarInterface;
+    window.atualizarTelaFinanceira = actualizarPainelVisual;
+    atualizarPainelVisual();
 });
 

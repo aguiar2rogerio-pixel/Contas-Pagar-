@@ -1,0 +1,238 @@
+/* =================================================================
+   Estilos.css - O Visual Escuro e Moderno do PWA
+   ================================================================= */
+
+/* 1. CONFIGURAÇÕES GERAIS E CORES (Variáveis para facilitar alterações) */
+:root {
+    --fundo-principal: #121212;       /* Preto fosco de fundo */
+    --fundo-card: #1E1E1E;            /* Cinza escuro para os blocos/cards */
+    --fundo-gaveta: #252525;          /* Cinza um pouco mais claro para dar destaque à gaveta */
+    --verde-vibrante: #00E676;        /* O verde neon para destacar valores e botões */
+    --texto-principal: #FFFFFF;       /* Texto branco puro */
+    --texto-secundario: #B3B3B3;      /* Texto cinza claro para labels e descrições */
+    --borda-suave: #2C2C2C;           /* Linhas divisórias discretas */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent; /* Remove aquele quadrado azul feio ao clicar no celular */
+}
+
+body {
+    background-color: var(--fundo-principal);
+    color: var(--texto-principal);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* 2. TOPO DO APP (Header fixo) */
+.topo-app {
+    background-color: var(--fundo-card);
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid var(--borda-suave);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.seletor-mes {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 10px;
+}
+
+.seletor-mes button {
+    background: none;
+    border: none;
+    color: var(--verde-vibrante);
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px 10px;
+}
+
+#mes-atual {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.label-total {
+    font-size: 12px;
+    color: var(--texto-secundario);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.valor-total {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--verde-vibrante);
+}
+
+/* 3. CONTEÚDO PRINCIPAL (Área de scroll das abas) */
+.conteudo-principal {
+    flex: 1;
+    padding: 15px;
+    padding-bottom: 90px; /* Espaço para não ficar escondido atrás da barra inferior */
+    overflow-y: auto;
+}
+
+.secao-aba {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.aba-escondida {
+    display: none !important;
+}
+
+h2 {
+    font-size: 16px;
+    color: var(--texto-secundario);
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 4. DESIGN DAS LISTAS E CARDS (Onde as contas e faturas vão aparecer) */
+.lista-contas, .lista-cartoes, .grade-responsaveis {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Base de qualquer bloco clicável na tela */
+.card-item {
+    background-color: var(--fundo-card);
+    border: 1px solid var(--borda-suave);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 5. GAVETA MODAL (O efeito de subir do rodapé) */
+.gaveta-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente atrás da gaveta */
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Empurra o conteúdo para a base da tela */
+    transition: opacity 0.3s ease;
+}
+
+.gaveta-conteudo {
+    background-color: var(--fundo-gaveta);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 20px;
+    max-height: 85vh; /* Não deixa a gaveta tapar a tela 100% */
+    overflow-y: auto;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: translateY(0); /* Posição aberta */
+}
+
+/* Quando a gaveta estiver escondida */
+.gaveta-container.escondida {
+    opacity: 0;
+    pointer-events: none;
+}
+.gaveta-container.escondida .gaveta-conteudo {
+    transform: translateY(100%); /* Joga a gaveta para baixo da tela */
+}
+
+.gaveta-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--borda-suave);
+}
+
+.btn-fechar {
+    background: none;
+    border: none;
+    color: var(--texto-secundario);
+    font-size: 28px;
+    cursor: pointer;
+}
+
+/* 6. BARRA DE NAVEGAÇÃO INFERIOR */
+.barra-navegacao {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background-color: var(--fundo-card);
+    border-top: 1px solid var(--borda-suave);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom); /* Ajuste para notch inferior de celulares novos */
+    z-index: 90;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: var(--texto-secundario);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    flex: 1;
+}
+
+.nav-item.ativo {
+    color: var(--verde-vibrante);
+}
+
+.nav-item .icone {
+    font-size: 20px;
+}
+
+.nav-item .texto {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* O Botão Central de Mais (+) destacado */
+.nav-item-central {
+    background-color: var(--verde-vibrante);
+    border: none;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0, 230, 118, 0.3);
+    cursor: pointer;
+    transform: translateY(-15px); /* Faz o botão flutuar um pouco para cima da barra */
+}
+
+.icone-mais {
+    color: #000000;
+    font-size: 28px;
+    font-weight: bold;
+}
+

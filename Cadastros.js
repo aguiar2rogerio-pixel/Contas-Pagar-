@@ -1,5 +1,5 @@
 // =================================================================
-// Cadastros.js - Gerenciamento de Pessoas e Cartões (LocalStorage)
+// Cadastros.js - Gerenciamento de Pessoas e Cartões (ZERADO PARA MONETIZAÇÃO)
 // =================================================================
 
 const Cadastros = {
@@ -7,16 +7,17 @@ const Cadastros = {
     CHAVE_PESSOAS: 'financas_pessoas',
     CHAVE_CARTOES: 'financas_cartoes',
 
-    // 2. BUSCAR DADOS (Lê o que está salvo. Se estiver vazio, traz uma lista padrão)
+    // 2. BUSCAR DADOS (Lê o que está salvo. Se estiver vazio, nasce zerado)
     obterPessoas: function() {
         const dados = localStorage.getItem(this.CHAVE_PESSOAS);
-        // Se for a primeira vez abrindo o app, ele já nasce com a sua estrutura de base
-        return dados ? JSON.parse(dados) : ['Casa', 'Isabelli', 'Daniela', 'Rogério', 'Stephanie'];
+        // Nasce apenas com 'Casa', que é o padrão universal para despesas coletivas
+        return dados ? JSON.parse(dados) : ['Casa'];
     },
 
     obterCartoes: function() {
         const dados = localStorage.getItem(this.CHAVE_CARTOES);
-        return dados ? JSON.parse(dados) : ['Nu Bank', 'Bradesco'];
+        // Nasce 100% vazio para o cliente cadastrar os seus próprios cartões
+        return dados ? JSON.parse(dados) : [];
     },
 
     // 3. SALVAR DADOS (Grava as alterações fisicamente no chip do celular)
@@ -58,7 +59,7 @@ const Cadastros = {
 
     excluirPessoa: function(nome) {
         let pessoas = this.obterPessoas();
-        // Não deixa excluir a entidade "Casa" que é o padrão de consumo
+        // Não deixa excluir a entidade "Casa" que é a base do sistema
         if (nome === 'Casa') return false; 
 
         pessoas = pessoas.filter(p => p !== nome);

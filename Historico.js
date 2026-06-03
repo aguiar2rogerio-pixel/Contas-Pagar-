@@ -1,5 +1,5 @@
 // =================================================================
-// Historico.js - Atualização do Painel Principal por Vencimentos
+// Historico.js - Atualização do Painel Principal por Vencimentos (Corrigido)
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,19 +27,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let resumo = { totalGeral: 0, rateio: {}, cartoes: {}, listaContas: [] };
 
-        if (typeof CalculoFinanceiro !== 'undefined') {
-            resumo = CalculoFinanceiro.calcularResumoDoMes(mesAtual, anoAtual);
+        // Tenta rodar o cálculo financeiro de forma segura
+        try {
+            if (typeof CalculoFinanceiro !== 'undefined') {
+                resumo = CalculoFinanceiro.calcularResumoDoMes(mesAtual, anoAtual);
+            }
+        } catch (err) {
+            console.error("Erro ao calcular resumo financeiro:", err);
         }
 
         if (labelTotalGeral) {
             labelTotalGeral.innerText = `R$ ${resumo.totalGeral.toFixed(2).replace('.', ',')}`;
         }
 
-        // Renderiza lista de contas cronológica
+        // Renderiza lista de contas em ordem cronológica
         if (listaPrioridades) {
             listaPrioridades.innerHTML = '';
-            if (resumo.listaContas.length === 0) {
-                listaPrioridades.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhuma conta registrada para este mês.</div>`;
+            if (!resumo.listaContas || resumo.listaContas.length === 0) {
+                listaPrioridades.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhum lançamento registrado para este mês.</div>`;
             } else {
                 resumo.listaContas.forEach(item => {
                     const icone = item.tipo === 'cartao' ? '💳' : item.tipo === 'emprestimo' ? '🏦' : '📄';
@@ -54,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     listaPrioridades.innerHTML += `
-                        <div class="card-item" style="border-left: 3px solid #2C2C2C; padding: 12px; margin-bottom: 10px; background-color: #1E1E1E; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="card-item" style="border-left: 4px solid #00E676; padding: 12px; margin-bottom: 10px; background-color: #1E1E1E; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                             <div>
                                 <span style="font-size: 15px; font-weight: bold; display: block; color: #FFF;">${icone} ${item.descricao}</span>
                                 <span style="font-size: 12px; color: #00E676; font-weight: bold;">Vencimento: Dia ${item.diaVencimento}</span>
@@ -69,10 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Renderiza o painel de Rateio (Aba 2)
+        // Renderiza a aba de Rateio/Divisão (Aba 2)
         if (containerRateio) {
             containerRateio.innerHTML = '';
-            const chaves = Object.keys(resumo.rateio);
+            const chaves = Object.keys(resumo.rateio || {});
             if (chaves.length === 0) {
                 containerRateio.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Sem dados de divisão este mês.</div>`;
             } else {
@@ -105,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.atualizarTelaFinanceira = actualizarPainelVisual;
+    window.atualizarTelaFinanceira = atualizarPainelVisual;
     atualizarPainelVisual();
 });
 

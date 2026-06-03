@@ -1,152 +1,72 @@
-/**
- * Service Worker para Compromissos App PWA
- * Habilita funcionalidade offline e estratégias de cache
- */
+// =================================================================
+// sw.js - Versão Avançada Network-First (Sem travamento de Cache)
+// =================================================================
 
-const CACHE_NAME = 'compromissos-app-v1';
-const RUNTIME_CACHE = 'compromissos-app-runtime-v1';
-
-// Arquivos para cache na instalação
-const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/app.js',
-    '/manifest.json',
-    '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png',
+const CACHE_NAME = 'financas-v2'; // Mudamos a versão para forçar a limpeza da anterior
+const ASSETS = [
+  './',
+  './index.html',
+  './Estilos.css',
+  './app.js',
+  './Cadastros.js',
+  './CalculoFinanceiro.js',
+  './Historico.js',
+  './Telas.js',
+  './manifest.json',
+  './icon-192x192.png',
+  './icon-512x512.png'
 ];
 
-/**
- * Evento de instalação - cache de assets estáticos
- */
-self.addEventListener('install', (event) => {
-    console.log('[Service Worker] Instalando...');
+// Instalação: Guarda a base para funcionamento offline, mas sem bloquear a rede
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    }).then(() => self.skipWaiting()) // Força o novo SW a ativar-se imediatamente
+  );
+});
 
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('[Service Worker] Cacheando assets estáticos');
-            return cache.addAll(STATIC_ASSETS).catch((error) => {
-                console.warn('[Service Worker] Falha ao cachear alguns assets:', error);
-            });
-        }).then(() => {
-            self.skipWaiting();
+// Ativação: Limpa automaticamente qualquer lixo de caches antigos do teu telemóvel
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
         })
-    );
+      );
+    }).then(() => self.clients.claim()) // Assume o controlo da página na hora
+  );
 });
 
-/**
- * Evento de ativação - limpar caches antigos
- */
-self.addEventListener('activate', (event) => {
-    console.log('[Service Worker] Ativando...');
-
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-                        console.log('[Service Worker] Deletando cache antigo:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => {
-            self.clients.claim();
-        })
-    );
+// ESTRATÉGIA INDESTRUTÍVEL: Network-First (Tenta sempre a internet primeiro)
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    fetch(e.request)
+      .then((response) => {
+        // Se a internet funcionar, clona a resposta e atualiza o cache em segundo plano
+        if (response && response.status === 200 && e.request.method === 'GET') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // SE A INTERNET FALHAR (OFFLINE), ele vai buscar ao chip de memória instantaneamente
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Se for uma página de navegação e não houver cache, devolve a index
+          if (e.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+        });
+      })
+  );
 });
 
-/**
- * Evento de fetch - implementar estratégia de cache
- */
-self.addEventListener('fetch', (event) => {
-    const { request } = event;
-    const url = new URL(request.url);
-
-    // Pula requisições não-GET
-    if (request.method !== 'GET') {
-        return;
-    }
-
-    // Pula extensões do Chrome
-    if (url.protocol === 'chrome-extension:') {
-        return;
-    }
-
-    // Estratégia cache-first para assets estáticos
-    if (
-        request.destination === 'image' ||
-        request.destination === 'font' ||
-        request.destination === 'style' ||
-        request.destination === 'script'
-    ) {
-        event.respondWith(
-            caches.match(request).then((response) => {
-                if (response) {
-                    return response;
-                }
-
-                return fetch(request).then((response) => {
-                    if (!response || response.status !== 200 || response.type === 'error') {
-                        return response;
-                    }
-
-                    const responseToCache = response.clone();
-                    caches.open(RUNTIME_CACHE).then((cache) => {
-                        cache.put(request, responseToCache);
-                    });
-
-                    return response;
-                }).catch(() => {
-                    return caches.match(request);
-                });
-            })
-        );
-        return;
-    }
-
-    // Estratégia network-first para HTML e requisições
-    event.respondWith(
-        fetch(request)
-            .then((response) => {
-                if (!response || response.status !== 200 || response.type === 'error') {
-                    return response;
-                }
-
-                const responseToCache = response.clone();
-                caches.open(RUNTIME_CACHE).then((cache) => {
-                    cache.put(request, responseToCache);
-                });
-
-                return response;
-            })
-            .catch(() => {
-                return caches.match(request).then((response) => {
-                    if (response) {
-                        return response;
-                    }
-
-                    if (request.mode === 'navigate') {
-                        return caches.match('/index.html');
-                    }
-
-                    return new Response('Offline - Recurso não disponível', {
-                        status: 503,
-                        statusText: 'Service Unavailable',
-                        headers: new Headers({
-                            'Content-Type': 'text/plain',
-                        }),
-                    });
-                });
-            })
-    );
-});
-
-/**
- * Manipula mensagens de clientes
- */
-self.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'SKIP_WAITING') {
-        self.skipWaiting();
-    }
-});

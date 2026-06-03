@@ -8,7 +8,6 @@ const Cadastros = {
     CHAVE_TIPOS_CONSUMO: 'financas_tipos_consumo',
     CHAVE_CONTRATOS_EMPRESTIMO: 'financas_contratos_emprestimo',
 
-    // --- GERENCIAMENTO DE PESSOAS ---
     obterPessoas: function() {
         const dados = localStorage.getItem(this.CHAVE_PESSOAS);
         return dados ? JSON.parse(dados) : ['Casa'];
@@ -23,11 +22,9 @@ const Cadastros = {
         lista.push(n); this.salvarPessoas(lista); return true;
     },
 
-    // --- GERENCIAMENTO DE CARTÕES (Com Fechamento e Vencimento) ---
     obterCartoes: function() {
         const dados = localStorage.getItem(this.CHAVE_CARTOES);
         return dados ? JSON.parse(dados) : []; 
-        // Retorna Array de Objetos: [{ nome: 'Nu Bank', fechamento: 5, vencimento: 12 }]
     },
     salvarCartoes: function(lista) {
         localStorage.setItem(this.CHAVE_CARTOES, JSON.stringify(lista));
@@ -46,11 +43,9 @@ const Cadastros = {
         return true;
     },
 
-    // --- GERENCIAMENTO DE CONTAS DE CONSUMO (Cadastro Prévio) ---
     obterTiposConsumo: function() {
         const dados = localStorage.getItem(this.CHAVE_TIPOS_CONSUMO);
         return dados ? JSON.parse(dados) : [];
-        // Retorna: [{ nome: 'Conta de Luz EDP', vencimentoPadrao: 10 }]
     },
     salvarTiposConsumo: function(lista) {
         localStorage.setItem(this.CHAVE_TIPOS_CONSUMO, JSON.stringify(lista));
@@ -68,11 +63,9 @@ const Cadastros = {
         return true;
     },
 
-    // --- GERENCIAMENTO DE EMPRÉSTIMOS (Cadastro Prévio) ---
     obterContratosEmprestimo: function() {
         const dados = localStorage.getItem(this.CHAVE_CONTRATOS_EMPRESTIMO);
         return dados ? JSON.parse(dados) : [];
-        // Retorna: [{ nome: 'Empréstimo Caixa', vencimentoPadrao: 20 }]
     },
     salvarContratosEmprestimo: function(lista) {
         localStorage.setItem(this.CHAVE_CONTRATOS_EMPRESTIMO, JSON.stringify(lista));
@@ -90,4 +83,3 @@ const Cadastros = {
         return true;
     }
 };
-

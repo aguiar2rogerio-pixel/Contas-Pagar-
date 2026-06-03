@@ -1,104 +1,92 @@
 // =================================================================
-// Cadastros.js - Gerenciamento de Pessoas e Cartões (ZERADO PARA MONETIZAÇÃO)
+// Cadastros.js - Estrutura Comercial com Regras de Vencimento
 // =================================================================
 
 const Cadastros = {
-    // 1. CHAVES DE ARMAZENAMENTO (Nomes das gavetas no cofre do celular)
     CHAVE_PESSOAS: 'financas_pessoas',
     CHAVE_CARTOES: 'financas_cartoes',
+    CHAVE_TIPOS_CONSUMO: 'financas_tipos_consumo',
+    CHAVE_CONTRATOS_EMPRESTIMO: 'financas_contratos_emprestimo',
 
-    // 2. BUSCAR DADOS (Lê o que está salvo. Se estiver vazio, nasce zerado)
+    // --- GERENCIAMENTO DE PESSOAS ---
     obterPessoas: function() {
         const dados = localStorage.getItem(this.CHAVE_PESSOAS);
-        // Nasce apenas com 'Casa', que é o padrão universal para despesas coletivas
         return dados ? JSON.parse(dados) : ['Casa'];
     },
-
-    obterCartoes: function() {
-        const dados = localStorage.getItem(this.CHAVE_CARTOES);
-        // Nasce 100% vazio para o cliente cadastrar os seus próprios cartões
-        return dados ? JSON.parse(dados) : [];
-    },
-
-    // 3. SALVAR DADOS (Grava as alterações fisicamente no chip do celular)
     salvarPessoas: function(lista) {
         localStorage.setItem(this.CHAVE_PESSOAS, JSON.stringify(lista));
     },
+    adicionarPessoa: function(nome) {
+        const n = nome.trim(); if (!n) return false;
+        const lista = this.obterPessoas();
+        if (lista.includes(n)) return false;
+        lista.push(n); this.salvarPessoas(lista); return true;
+    },
 
+    // --- GERENCIAMENTO DE CARTÕES (Com Fechamento e Vencimento) ---
+    obterCartoes: function() {
+        const dados = localStorage.getItem(this.CHAVE_CARTOES);
+        return dados ? JSON.parse(dados) : []; 
+        // Retorna Array de Objetos: [{ nome: 'Nu Bank', fechamento: 5, vencimento: 12 }]
+    },
     salvarCartoes: function(lista) {
         localStorage.setItem(this.CHAVE_CARTOES, JSON.stringify(lista));
     },
-
-    // 4. AÇÕES PARA PESSOAS (Adicionar, Alterar e Excluir)
-    adicionarPessoa: function(nome) {
-        const nomeLimpo = nome.trim();
-        if (!nomeLimpo) return false;
+    adicionarCartao: function(nome, diaFechamento, diaVencimento) {
+        const n = nome.trim(); if (!n) return false;
+        const lista = this.obterCartoes();
+        if (lista.some(c => c.nome.toLowerCase() === n.toLowerCase())) return false;
         
-        const pessoas = this.obterPessoas();
-        if (pessoas.includes(nomeLimpo)) return false; // Impede nomes duplicados
-        
-        pessoas.push(nomeLimpo);
-        this.salvarPessoas(pessoas);
+        lista.push({
+            nome: n,
+            fechamento: parseInt(diaFechamento) || 5,
+            vencimento: parseInt(diaVencimento) || 12
+        });
+        this.salvarCartoes(lista);
         return true;
     },
 
-    alterarPessoa: function(nomeAntigo, nomeNovo) {
-        const novoLimpo = nomeNovo.trim();
-        if (!novoLimpo) return false;
-
-        let pessoas = this.obterPessoas();
-        const index = pessoas.indexOf(nomeAntigo);
-        
-        if (index !== -1 && !pessoas.includes(novoLimpo)) {
-            pessoas[index] = novoLimpo;
-            this.salvarPessoas(pessoas);
-            return true;
-        }
-        return false;
+    // --- GERENCIAMENTO DE CONTAS DE CONSUMO (Cadastro Prévio) ---
+    obterTiposConsumo: function() {
+        const dados = localStorage.getItem(this.CHAVE_TIPOS_CONSUMO);
+        return dados ? JSON.parse(dados) : [];
+        // Retorna: [{ nome: 'Conta de Luz EDP', vencimentoPadrao: 10 }]
     },
+    salvarTiposConsumo: function(lista) {
+        localStorage.setItem(this.CHAVE_TIPOS_CONSUMO, JSON.stringify(lista));
+    },
+    adicionarTipoConsumo: function(nome, vencimentoPadrao) {
+        const n = nome.trim(); if (!n) return false;
+        const lista = this.obterTiposConsumo();
+        if (lista.some(c => c.nome.toLowerCase() === n.toLowerCase())) return false;
 
-    excluirPessoa: function(nome) {
-        let pessoas = this.obterPessoas();
-        // Não deixa excluir a entidade "Casa" que é a base do sistema
-        if (nome === 'Casa') return false; 
-
-        pessoas = pessoas.filter(p => p !== nome);
-        this.salvarPessoas(pessoas);
+        lista.push({
+            nome: n,
+            vencimentoPadrao: parseInt(vencimentoPadrao) || 10
+        });
+        this.salvarTiposConsumo(lista);
         return true;
     },
 
-    // 5. AÇÕES PARA CARTÕES (Adicionar, Alterar e Excluir)
-    adicionarCartao: function(nome) {
-        const nomeLimpo = nome.trim();
-        if (!nomeLimpo) return false;
-
-        const cartoes = this.obterCartoes();
-        if (cartoes.includes(nomeLimpo)) return false;
-
-        cartoes.push(nomeLimpo);
-        this.salvarCartoes(cartoes);
-        return true;
+    // --- GERENCIAMENTO DE EMPRÉSTIMOS (Cadastro Prévio) ---
+    obterContratosEmprestimo: function() {
+        const dados = localStorage.getItem(this.CHAVE_CONTRATOS_EMPRESTIMO);
+        return dados ? JSON.parse(dados) : [];
+        // Retorna: [{ nome: 'Empréstimo Caixa', vencimentoPadrao: 20 }]
     },
-
-    alterarCartao: function(nomeAntigo, nomeNovo) {
-        const novoLimpo = nomeNovo.trim();
-        if (!novoLimpo) return false;
-
-        let cartoes = this.obterCartoes();
-        const index = cartoes.indexOf(nomeAntigo);
-
-        if (index !== -1 && !cartoes.includes(novoLimpo)) {
-            cartoes[index] = novoLimpo;
-            this.salvarCartoes(cartoes);
-            return true;
-        }
-        return false;
+    salvarContratosEmprestimo: function(lista) {
+        localStorage.setItem(this.CHAVE_CONTRATOS_EMPRESTIMO, JSON.stringify(lista));
     },
+    adicionarContratoEmprestimo: function(nome, vencimentoPadrao) {
+        const n = nome.trim(); if (!n) return false;
+        const lista = this.obterContratosEmprestimo();
+        if (lista.some(e => e.nome.toLowerCase() === n.toLowerCase())) return false;
 
-    excluirCartao: function(nome) {
-        let cartoes = this.obterCartoes();
-        cartoes = cartoes.filter(c => c !== nome);
-        this.salvarCartoes(cartoes);
+        lista.push({
+            nome: n,
+            vencimentoPadrao: parseInt(vencimentoPadrao) || 20
+        });
+        this.salvarContratosEmprestimo(lista);
         return true;
     }
 };

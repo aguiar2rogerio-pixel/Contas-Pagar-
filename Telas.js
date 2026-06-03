@@ -1,5 +1,5 @@
 // =================================================================
-// Telas.js - Formulários Inteligentes com Cadastro e Vencimentos
+// Telas.js - Cadastro Simplificado, Responsável Dinâmico e Correção de Salvamento
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let tipoAtivo = 'conta'; 
 
-    // Navegação Inferior
+    // Navegação de Abas Inferiores
     document.querySelectorAll('.nav-item').forEach(botao => {
         botao.addEventListener('click', () => {
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('ativo'));
@@ -69,15 +69,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) { console.error(e); }
 
+        // Montagem das Opções com Inclusão de Novos Itens Dinâmicos
         let opcoesResponsaveis = pessoas.map(p => `<option value="${p}">${p}</option>`).join('');
+        opcoesResponsaveis += `<option value="__NOVO_RESPONSAVEL__" style="color: #00E676;">+ Cadastrar Novo Responsável</option>`;
         
-        let opcoesCartoes = cartoes.map(c => `<option value="${c.nome}">${c.nome} (venc. dia ${c.vencimento})</option>`).join('');
+        let opcoesCartoes = cartoes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
         opcoesCartoes += `<option value="__NOVO_CARTAO__" style="color: #00E676;">+ Cadastrar Novo Cartão</option>`;
 
-        let opcoesConsumos = consumos.map(c => `<option value="${c.nome}">${c.nome} (venc. dia ${c.vencimentoPadrao})</option>`).join('');
+        let opcoesConsumos = consumos.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
         opcoesConsumos += `<option value="__NOVO_CONSUMO__" style="color: #00E676;">+ Cadastrar Nova Conta</option>`;
 
-        let opcoesEmprestimos = emprestimos.map(e => `<option value="${e.nome}">${e.nome} (venc. dia ${e.vencimentoPadrao})</option>`).join('');
+        let opcoesEmprestimos = emprestimos.map(e => `<option value="${e.nome}">${e.nome}</option>`).join('');
         opcoesEmprestimos += `<option value="__NOVO_EMPRESTIMO__" style="color: #00E676;">+ Cadastrar Novo Empréstimo</option>`;
 
         if (tipoAtivo === 'conta') {
@@ -94,12 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="campo-valor" placeholder="0.00" step="0.01" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento Manual (Opcional)</label>
-                    <input type="number" id="campo-vencimento-manual" placeholder="Ex: 10" min="1" max="31" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
+                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento desta Conta</label>
+                    <input type="number" id="campo-vencimento-manual" placeholder="Ex: 10" min="1" max="31" value="10" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Responsável</label>
                     <select id="campo-responsavel" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
+                        <option value="">Selecione...</option>
                         ${opcoesResponsaveis}
                     </select>
                 </div>
@@ -114,8 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Descrição do Gasto no Cartão</label>
-                    <input type="text" id="campo-descricao-avulsa" placeholder="Ex: Supermercado" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
+                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Descrição da Compra</label>
+                    <input type="text" id="campo-descricao-avulsa" placeholder="Ex: Supermercado, Posto" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <div style="flex: 2;">
@@ -130,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Responsável</label>
                     <select id="campo-responsavel" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
+                        <option value="">Selecione...</option>
                         ${opcoesResponsaveis}
                     </select>
                 </div>
@@ -137,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (tipoAtivo === 'emprestimo') {
             container.innerHTML = `
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Selecione o Contrato de Empréstimo</label>
+                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Selecione o Contrato</label>
                     <select id="campo-selecao-item" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Escolha um contrato...</option>
                         ${opcoesEmprestimos}
@@ -145,17 +149,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <div style="flex: 1;">
-                        <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Valor da Parcela Fixa</label>
+                        <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Valor da Parcela</label>
                         <input type="number" id="campo-valor-parcela" placeholder="0.00" step="0.01" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                     </div>
                     <div style="flex: 1;">
                         <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Qtd Parcelas</label>
-                        <input type="number" id="campo-parcelas" placeholder="12" min="1" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
+                        <input type="number" id="campo-parcelas" placeholder="12" value="12" min="1" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                     </div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento da Parcela</label>
+                    <input type="number" id="campo-vencimento-manual" placeholder="Ex: 20" min="1" max="31" value="20" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Responsável</label>
                     <select id="campo-responsavel" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
+                        <option value="">Selecione...</option>
                         ${opcoesResponsaveis}
                     </select>
                 </div>
@@ -173,34 +182,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function configurarEventosMenus() {
         const seletor = document.getElementById('campo-selecao-item');
-        if (!seletor) return;
+        const seletorResp = document.getElementById('campo-responsavel');
 
-        seletor.addEventListener('change', () => {
-            const val = seletor.value;
-            if (val === '__NOVO_CARTAO__') {
-                const nome = prompt("Nome do Cartão (Ex: Nu Bank):");
-                const fechamento = prompt("Dia do Fechamento da fatura (Ex: 5):");
-                const vencimento = prompt("Dia do Vencimento da fatura (Ex: 12):");
-                if (nome && fechamento && vencimento) {
-                    Cadastros.adicionarCartao(nome, fechamento, vencimento);
-                    gerarCamposFormulario();
-                } else { seletor.value = ''; }
-            } else if (val === '__NOVO_CONSUMO__') {
-                const nome = prompt("Nome da Conta de Consumo (Ex: Conta de Luz EDP):");
-                const vencimento = prompt("Dia do Vencimento Padrão (Ex: 10):");
-                if (nome && vencimento) {
-                    Cadastros.adicionarTipoConsumo(nome, vencimento);
-                    gerarCamposFormulario();
-                } else { seletor.value = ''; }
-            } else if (val === '__NOVO_EMPRESTIMO__') {
-                const nome = prompt("Nome do Empréstimo/Contrato (Ex: Caixa Construção):");
-                const vencimento = prompt("Dia de Vencimento da Parcela (Ex: 20):");
-                if (nome && vencimento) {
-                    Cadastros.adicionarContratoEmprestimo(nome, vencimento);
-                    gerarCamposFormulario();
-                } else { seletor.value = ''; }
-            }
-        });
+        if (seletor) {
+            seletor.addEventListener('change', () => {
+                const val = seletor.value;
+                if (val === '__NOVO_CARTAO__') {
+                    const nome = prompt("Nome do Cartão (Ex: Nu Bank):");
+                    const fechamento = prompt("Dia do Fechamento (Ex: 5):");
+                    const vencimento = prompt("Dia do Vencimento (Ex: 12):");
+                    if (nome && fechamento && vencimento) {
+                        Cadastros.adicionarCartao(nome, fechamento, vencimento);
+                        gerarCamposFormulario();
+                    } else { seletor.value = ''; }
+                } else if (val === '__NOVO_CONSUMO__') {
+                    const nome = prompt("Nome da Conta de Consumo (Ex: Conta de Luz EDP):");
+                    if (nome) {
+                        Cadastros.adicionarTipoConsumo(nome);
+                        gerarCamposFormulario();
+                    } else { seletor.value = ''; }
+                } else if (val === '__NOVO_EMPRESTIMO__') {
+                    const nome = prompt("Nome do Empréstimo (Ex: Caixa Construção):");
+                    if (nome) {
+                        Cadastros.adicionarContratoEmprestimo(nome);
+                        gerarCamposFormulario();
+                    } else { seletor.value = ''; }
+                }
+            });
+        }
+
+        if (seletorResp) {
+            seletorResp.addEventListener('change', () => {
+                if (seletorResp.value === '__NOVO_RESPONSAVEL__') {
+                    const nome = prompt("Nome do Novo Responsável (Ex: Rogério):");
+                    if (nome && nome.trim()) {
+                        Cadastros.adicionarPessoa(nome);
+                        gerarCamposFormulario();
+                    } else { seletorResp.value = ''; }
+                }
+            });
+        }
 
         const btn = document.getElementById('btn-salvar-gasto');
         if (btn) btn.addEventListener('click', processarFormularioFinal);
@@ -210,13 +231,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const seletor = document.getElementById('campo-selecao-item');
         const respElement = document.getElementById('campo-responsavel');
         
-        if (!seletor || !seletor.value) {
-            alert("Por favor, selecione um item no menu.");
+        if (!seletor || !seletor.value || seletor.value.startsWith('__')) {
+            alert("Por favor, selecione um item válido no menu.");
+            return;
+        }
+
+        if (!respElement || !respElement.value || respElement.value.startsWith('__')) {
+            alert("Por favor, selecione um Responsável.");
             return;
         }
 
         const itemSelecionado = seletor.value;
-        const responsavel = respElement ? respElement.value : 'Casa';
+        const responsavel = respElement.value;
         const dataAtual = new Date();
         
         let descricao = itemSelecionado;
@@ -230,41 +256,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const vManualE = document.getElementById('campo-vencimento-manual');
             
             valorTotal = valE ? parseFloat(valE.value) : 0;
+            diaVencimentoDefinido = vManualE && vManualE.value ? parseInt(vManualE.value) : 10;
             
-            const cInfo = Cadastros.obterTiposConsumo().find(c => c.nome === itemSelecionado);
-            diaVencimentoDefinido = cInfo ? cInfo.vencimentoPadrao : 10;
-            
-            if (vManualE && vManualE.value) {
-                diaVencimentoDefinido = parseInt(vManualE.value);
-            }
         } else if (tipoAtivo === 'cartao') {
             cartaoNome = itemSelecionado;
             const descAvulsaE = document.getElementById('campo-descricao-avulsa');
             const valE = document.getElementById('campo-valor');
             const parcE = document.getElementById('campo-parcelas');
 
-            descricao = descAvulsaE && descAvulsaE.value.trim() ? descAvulsaE.value.trim() : "Compra Cartão";
+            descricao = descAvulsaE && descAvulsaE.value.trim() ? descAvulsaE.value.trim() : `Compra no ${cartaoNome}`;
             valorTotal = valE ? parseFloat(valE.value) : 0;
             parcelas = parcE ? parseInt(parcE.value) : 1;
 
+            // Lógica Inteligente de Cartão (Sincroniza com as datas cadastradas do cartão)
             const cartaoInfo = Cadastros.obterCartoes().find(c => c.nome === itemSelecionado);
             if (cartaoInfo) {
                 const diaHoje = dataAtual.getDate();
                 if (diaHoje > cartaoInfo.fechamento) {
-                    dataAtual.setMonth(dataAtual.getMonth() + 1);
+                    dataAtual.setMonth(dataAtual.getMonth() + 1); // Joga pra fatura seguinte
                 }
                 diaVencimentoDefinido = cartaoInfo.vencimento;
+            } else {
+                diaVencimentoDefinido = 10;
             }
         } else if (tipoAtivo === 'emprestimo') {
             const vpE = document.getElementById('campo-valor-parcela');
             const parcE = document.getElementById('campo-parcelas');
+            const vManualE = document.getElementById('campo-vencimento-manual');
 
             const vParcela = vpE ? parseFloat(vpE.value) : 0;
             parcelas = parcE ? parseInt(parcE.value) : 1;
             valorTotal = vParcela * parcelas;
-
-            const empInfo = Cadastros.obterContratosEmprestimo().find(e => e.nome === itemSelecionado);
-            diaVencimentoDefinido = empInfo ? empInfo.vencimentoPadrao : 20;
+            diaVencimentoDefinido = vManualE && vManualE.value ? parseInt(vManualE.value) : 20;
         }
 
         if (isNaN(valorTotal) || valorTotal <= 0) {
@@ -285,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
             anoInicio: dataAtual.getFullYear()
         };
 
+        // Salva de Verdade no LocalStorage
         if (typeof CalculoFinanceiro !== 'undefined') {
             CalculoFinanceiro.adicionarGasto(novoGasto);
         } else {
@@ -293,9 +317,12 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('financas_lancamentos', JSON.stringify(lista));
         }
 
+        // Fecha a Gaveta e Atualiza a Interface sem fingimento!
         gaveta.classList.add('escondida');
-        if (window.atualizarTelaFinanceira) window.atualizarTelaFinanceira();
-        else window.location.reload();
+        if (window.atualizarTelaFinanceira) {
+            window.atualizarTelaFinanceira();
+        } else {
+            window.location.reload();
+        }
     }
 });
-

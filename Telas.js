@@ -1,5 +1,5 @@
 // =================================================================
-// Telas.js - Cadastro Simplificado, Responsável Dinâmico e Correção de Salvamento
+// Telas.js - Interface Fixa Sem Recarregamento de Campos (Anti-Bug)
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let tipoAtivo = 'conta'; 
 
-    // Navegação de Abas Inferiores
+    // Navegação de Abas Inferiores do Sistema
     document.querySelectorAll('.nav-item').forEach(botao => {
         botao.addEventListener('click', () => {
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('ativo'));
@@ -69,26 +69,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) { console.error(e); }
 
-        // Montagem das Opções com Inclusão de Novos Itens Dinâmicos
         let opcoesResponsaveis = pessoas.map(p => `<option value="${p}">${p}</option>`).join('');
-        opcoesResponsaveis += `<option value="__NOVO_RESPONSAVEL__" style="color: #00E676;">+ Cadastrar Novo Responsável</option>`;
         
-        let opcoesCartoes = cartoes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
-        opcoesCartoes += `<option value="__NOVO_CARTAO__" style="color: #00E676;">+ Cadastrar Novo Cartão</option>`;
-
-        let opcoesConsumos = consumos.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
-        opcoesConsumos += `<option value="__NOVO_CONSUMO__" style="color: #00E676;">+ Cadastrar Nova Conta</option>`;
-
-        let opcoesEmprestimos = emprestimos.map(e => `<option value="${e.nome}">${e.nome}</option>`).join('');
-        opcoesEmprestimos += `<option value="__NOVO_EMPRESTIMO__" style="color: #00E676;">+ Cadastrar Novo Empréstimo</option>`;
-
         if (tipoAtivo === 'conta') {
+            let opcoesConsumos = consumos.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+            
             container.innerHTML = `
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Selecione a Conta de Consumo</label>
                     <select id="campo-selecao-item" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Escolha uma conta...</option>
                         ${opcoesConsumos}
+                        <option value="__NOVO_CONSUMO__" style="color: #00E676; font-weight: bold;">+ Cadastrar Nova Conta</option>
                     </select>
                 </div>
                 <div style="margin-bottom: 15px;">
@@ -96,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="number" id="campo-valor" placeholder="0.00" step="0.01" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento desta Conta</label>
+                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento</label>
                     <input type="number" id="campo-vencimento-manual" placeholder="Ex: 10" min="1" max="31" value="10" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="margin-bottom: 20px;">
@@ -104,16 +96,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <select id="campo-responsavel" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Selecione...</option>
                         ${opcoesResponsaveis}
+                        <option value="__NOVO_RESPONSAVEL__" style="color: #00E676; font-weight: bold;">+ Cadastrar Novo Responsável</option>
                     </select>
                 </div>
             `;
         } else if (tipoAtivo === 'cartao') {
+            let opcoesCartoes = cartoes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+            
             container.innerHTML = `
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Selecione o Cartão</label>
                     <select id="campo-selecao-item" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Escolha um cartão...</option>
                         ${opcoesCartoes}
+                        <option value="__NOVO_CARTAO__" style="color: #00E676; font-weight: bold;">+ Cadastrar Novo Cartão</option>
                     </select>
                 </div>
                 <div style="margin-bottom: 15px;">
@@ -135,16 +131,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <select id="campo-responsavel" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Selecione...</option>
                         ${opcoesResponsaveis}
+                        <option value="__NOVO_RESPONSAVEL__" style="color: #00E676; font-weight: bold;">+ Cadastrar Novo Responsável</option>
                     </select>
                 </div>
             `;
         } else if (tipoAtivo === 'emprestimo') {
+            let opcoesEmprestimos = emprestimos.map(e => `<option value="${e.nome}">${e.nome}</option>`).join('');
+            
             container.innerHTML = `
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Selecione o Contrato</label>
                     <select id="campo-selecao-item" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Escolha um contrato...</option>
                         ${opcoesEmprestimos}
+                        <option value="__NOVO_EMPRESTIMO__" style="color: #00E676; font-weight: bold;">+ Cadastrar Novo Empréstimo</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento da Parcela</label>
+                    <label style="display: block; font-size: 12px; color: #B3B3B3; margin-bottom: 5px;">Dia de Vencimento</label>
                     <input type="number" id="campo-vencimento-manual" placeholder="Ex: 20" min="1" max="31" value="20" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                 </div>
                 <div style="margin-bottom: 20px;">
@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <select id="campo-responsavel" style="width: 100%; padding: 12px; background-color: #1E1E1E; border: 1px solid #2C2C2C; border-radius: 8px; color: #FFF; font-size: 16px;">
                         <option value="">Selecione...</option>
                         ${opcoesResponsaveis}
+                        <option value="__NOVO_RESPONSAVEL__" style="color: #00E676; font-weight: bold;">+ Cadastrar Novo Responsável</option>
                     </select>
                 </div>
             `;
@@ -193,19 +194,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     const vencimento = prompt("Dia do Vencimento (Ex: 12):");
                     if (nome && fechamento && vencimento) {
                         Cadastros.adicionarCartao(nome, fechamento, vencimento);
-                        gerarCamposFormulario();
+                        gerarCamposFormulario(); 
                     } else { seletor.value = ''; }
                 } else if (val === '__NOVO_CONSUMO__') {
-                    const nome = prompt("Nome da Conta de Consumo (Ex: Conta de Luz EDP):");
+                    const nome = prompt("Nome da Conta (Ex: Conta de Luz EDP):");
                     if (nome) {
                         Cadastros.adicionarTipoConsumo(nome);
-                        gerarCamposFormulario();
+                        gerarCamposFormulario(); 
                     } else { seletor.value = ''; }
                 } else if (val === '__NOVO_EMPRESTIMO__') {
                     const nome = prompt("Nome do Empréstimo (Ex: Caixa Construção):");
                     if (nome) {
                         Cadastros.adicionarContratoEmprestimo(nome);
-                        gerarCamposFormulario();
+                        gerarCamposFormulario(); 
                     } else { seletor.value = ''; }
                 }
             });
@@ -217,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nome = prompt("Nome do Novo Responsável (Ex: Rogério):");
                     if (nome && nome.trim()) {
                         Cadastros.adicionarPessoa(nome);
-                        gerarCamposFormulario();
+                        gerarCamposFormulario(); 
                     } else { seletorResp.value = ''; }
                 }
             });
@@ -268,12 +269,11 @@ document.addEventListener('DOMContentLoaded', () => {
             valorTotal = valE ? parseFloat(valE.value) : 0;
             parcelas = parcE ? parseInt(parcE.value) : 1;
 
-            // Lógica Inteligente de Cartão (Sincroniza com as datas cadastradas do cartão)
             const cartaoInfo = Cadastros.obterCartoes().find(c => c.nome === itemSelecionado);
             if (cartaoInfo) {
                 const diaHoje = dataAtual.getDate();
                 if (diaHoje > cartaoInfo.fechamento) {
-                    dataAtual.setMonth(dataAtual.getMonth() + 1); // Joga pra fatura seguinte
+                    dataAtual.setMonth(dataAtual.getMonth() + 1); 
                 }
                 diaVencimentoDefinido = cartaoInfo.vencimento;
             } else {
@@ -308,7 +308,6 @@ document.addEventListener('DOMContentLoaded', () => {
             anoInicio: dataAtual.getFullYear()
         };
 
-        // Salva de Verdade no LocalStorage
         if (typeof CalculoFinanceiro !== 'undefined') {
             CalculoFinanceiro.adicionarGasto(novoGasto);
         } else {
@@ -317,8 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('financas_lancamentos', JSON.stringify(lista));
         }
 
-        // Fecha a Gaveta e Atualiza a Interface sem fingimento!
         gaveta.classList.add('escondida');
+        
         if (window.atualizarTelaFinanceira) {
             window.atualizarTelaFinanceira();
         } else {

@@ -50,14 +50,13 @@ const Cadastros = {
     salvarTiposConsumo: function(lista) {
         localStorage.setItem(this.CHAVE_TIPOS_CONSUMO, JSON.stringify(lista));
     },
-    adicionarTipoConsumo: function(nome, vencimentoPadrao) {
+    adicionarTipoConsumo: function(nome) {
         const n = nome.trim(); if (!n) return false;
         const lista = this.obterTiposConsumo();
         if (lista.some(c => c.nome.toLowerCase() === n.toLowerCase())) return false;
 
         lista.push({
-            nome: n,
-            vencimentoPadrao: parseInt(vencimentoPadrao) || 10
+            nome: n
         });
         this.salvarTiposConsumo(lista);
         return true;
@@ -70,14 +69,13 @@ const Cadastros = {
     salvarContratosEmprestimo: function(lista) {
         localStorage.setItem(this.CHAVE_CONTRATOS_EMPRESTIMO, JSON.stringify(lista));
     },
-    adicionarContratoEmprestimo: function(nome, vencimentoPadrao) {
+    adicionarContratoEmprestimo: function(nome) {
         const n = nome.trim(); if (!n) return false;
         const lista = this.obterContratosEmprestimo();
         if (lista.some(e => e.nome.toLowerCase() === n.toLowerCase())) return false;
 
         lista.push({
-            nome: n,
-            vencimentoPadrao: parseInt(vencimentoPadrao) || 20
+            nome: n
         });
         this.salvarContratosEmprestimo(lista);
         return true;

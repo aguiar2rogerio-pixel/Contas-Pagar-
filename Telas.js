@@ -1,5 +1,5 @@
 // =================================================================
-// Telas.js - Interface Fixa Sem Recarregamento de Campos (Anti-Bug)
+// Telas.js - Interface Estável Sem Perda de Foco (Anti-Bug Corrigido)
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,7 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnFecharGaveta = document.getElementById('fechar-gaveta');
     const corpoGaveta = document.getElementById('corpo-gaveta');
 
-    let tipoAtivo = 'conta'; 
+    let tipoAtivo = 'conta';
+    let formularioMontado = false;
 
     // Navegação de Abas Inferiores do Sistema
     document.querySelectorAll('.nav-item').forEach(botao => {
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnAbrirLancamento) {
         btnAbrirLancamento.addEventListener('click', () => {
             tipoAtivo = 'conta';
+            formularioMontado = false;
             montarEstruturaGaveta();
             gaveta.classList.remove('escondida');
         });
@@ -36,20 +38,54 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnFecharGaveta) btnFecharGaveta.addEventListener('click', () => gaveta.classList.add('escondida'));
 
     function montarEstruturaGaveta() {
-        corpoGaveta.innerHTML = `
-            <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-                <button id="pilula-conta" style="flex: 1; padding: 10px; background-color: ${tipoAtivo === 'conta' ? '#00E676' : '#1E1E1E'}; border: 1px solid #2C2C2C; border-radius: 20px; color: ${tipoAtivo === 'conta' ? '#000' : '#B3B3B3'}; font-weight: bold; font-size: 13px; cursor: pointer;">📄 Consumo</button>
-                <button id="pilula-cartao" style="flex: 1; padding: 10px; background-color: ${tipoAtivo === 'cartao' ? '#00E676' : '#1E1E1E'}; border: 1px solid #2C2C2C; border-radius: 20px; color: ${tipoAtivo === 'cartao' ? '#000' : '#B3B3B3'}; font-weight: bold; font-size: 13px; cursor: pointer;">💳 Cartão</button>
-                <button id="pilula-emprestimo" style="flex: 1; padding: 10px; background-color: ${tipoAtivo === 'emprestimo' ? '#00E676' : '#1E1E1E'}; border: 1px solid #2C2C2C; border-radius: 20px; color: ${tipoAtivo === 'emprestimo' ? '#000' : '#B3B3B3'}; font-weight: bold; font-size: 13px; cursor: pointer;">🏦 Empréstimo</button>
-            </div>
-            <div id="formulario-dinamico-campos"></div>
-        `;
+        // Só reconstrói a estrutura de abas se não foi montada ainda
+        if (!formularioMontado) {
+            corpoGaveta.innerHTML = `
+                <div style="display: flex; gap: 8px; margin-bottom: 20px;" id="pilulas-container">
+                    <button id="pilula-conta" style="flex: 1; padding: 10px; background-color: ${tipoAtivo === 'conta' ? '#00E676' : '#1E1E1E'}; border: 1px solid #2C2C2C; border-radius: 20px; color: ${tipoAtivo === 'conta' ? '#000' : '#B3B3B3'}; font-weight: bold; font-size: 13px; cursor: pointer;">📄 Consumo</button>
+                    <button id="pilula-cartao" style="flex: 1; padding: 10px; background-color: ${tipoAtivo === 'cartao' ? '#00E676' : '#1E1E1E'}; border: 1px solid #2C2C2C; border-radius: 20px; color: ${tipoAtivo === 'cartao' ? '#000' : '#B3B3B3'}; font-weight: bold; font-size: 13px; cursor: pointer;">💳 Cartão</button>
+                    <button id="pilula-emprestimo" style="flex: 1; padding: 10px; background-color: ${tipoAtivo === 'emprestimo' ? '#00E676' : '#1E1E1E'}; border: 1px solid #2C2C2C; border-radius: 20px; color: ${tipoAtivo === 'emprestimo' ? '#000' : '#B3B3B3'}; font-weight: bold; font-size: 13px; cursor: pointer;">🏦 Empréstimo</button>
+                </div>
+                <div id="formulario-dinamico-campos"></div>
+            `;
 
-        document.getElementById('pilula-conta').addEventListener('click', () => { tipoAtivo = 'conta'; montarEstruturaGaveta(); });
-        document.getElementById('pilula-cartao').addEventListener('click', () => { tipoAtivo = 'cartao'; montarEstruturaGaveta(); });
-        document.getElementById('pilula-emprestimo').addEventListener('click', () => { tipoAtivo = 'emprestimo'; montarEstruturaGaveta(); });
+            // Configurar listeners das pilulas
+            document.getElementById('pilula-conta').addEventListener('click', () => {
+                tipoAtivo = 'conta';
+                atualizarPilulas();
+                gerarCamposFormulario();
+            });
+            document.getElementById('pilula-cartao').addEventListener('click', () => {
+                tipoAtivo = 'cartao';
+                atualizarPilulas();
+                gerarCamposFormulario();
+            });
+            document.getElementById('pilula-emprestimo').addEventListener('click', () => {
+                tipoAtivo = 'emprestimo';
+                atualizarPilulas();
+                gerarCamposFormulario();
+            });
+
+            formularioMontado = true;
+        }
 
         gerarCamposFormulario();
+    }
+
+    function atualizarPilulas() {
+        const pilulas = {
+            'pilula-conta': tipoAtivo === 'conta',
+            'pilula-cartao': tipoAtivo === 'cartao',
+            'pilula-emprestimo': tipoAtivo === 'emprestimo'
+        };
+
+        Object.entries(pilulas).forEach(([id, ativo]) => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.style.backgroundColor = ativo ? '#00E676' : '#1E1E1E';
+                btn.style.color = ativo ? '#000' : '#B3B3B3';
+            }
+        });
     }
 
     function gerarCamposFormulario() {
@@ -190,24 +226,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const val = seletor.value;
                 if (val === '__NOVO_CARTAO__') {
                     const nome = prompt("Nome do Cartão (Ex: Nu Bank):");
-                    const fechamento = prompt("Dia do Fechamento (Ex: 5):");
-                    const vencimento = prompt("Dia do Vencimento (Ex: 12):");
-                    if (nome && fechamento && vencimento) {
-                        Cadastros.adicionarCartao(nome, fechamento, vencimento);
-                        gerarCamposFormulario(); 
-                    } else { seletor.value = ''; }
+                    if (nome) {
+                        const fechamento = prompt("Dia do Fechamento (Ex: 5):");
+                        const vencimento = prompt("Dia do Vencimento (Ex: 12):");
+                        if (fechamento && vencimento) {
+                            Cadastros.adicionarCartao(nome, fechamento, vencimento);
+                            gerarCamposFormulario();
+                        } else {
+                            seletor.value = '';
+                        }
+                    } else {
+                        seletor.value = '';
+                    }
                 } else if (val === '__NOVO_CONSUMO__') {
                     const nome = prompt("Nome da Conta (Ex: Conta de Luz EDP):");
                     if (nome) {
                         Cadastros.adicionarTipoConsumo(nome);
-                        gerarCamposFormulario(); 
-                    } else { seletor.value = ''; }
+                        gerarCamposFormulario();
+                    } else {
+                        seletor.value = '';
+                    }
                 } else if (val === '__NOVO_EMPRESTIMO__') {
                     const nome = prompt("Nome do Empréstimo (Ex: Caixa Construção):");
                     if (nome) {
                         Cadastros.adicionarContratoEmprestimo(nome);
-                        gerarCamposFormulario(); 
-                    } else { seletor.value = ''; }
+                        gerarCamposFormulario();
+                    } else {
+                        seletor.value = '';
+                    }
                 }
             });
         }
@@ -218,8 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nome = prompt("Nome do Novo Responsável (Ex: Rogério):");
                     if (nome && nome.trim()) {
                         Cadastros.adicionarPessoa(nome);
-                        gerarCamposFormulario(); 
-                    } else { seletorResp.value = ''; }
+                        gerarCamposFormulario();
+                    } else {
+                        seletorResp.value = '';
+                    }
                 }
             });
         }
@@ -272,6 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const cartaoInfo = Cadastros.obterCartoes().find(c => c.nome === itemSelecionado);
             if (cartaoInfo) {
                 const diaHoje = dataAtual.getDate();
+                // REGRA DO CARTÃO: Se hoje é após o fechamento, a fatura é do próximo mês
                 if (diaHoje > cartaoInfo.fechamento) {
                     dataAtual.setMonth(dataAtual.getMonth() + 1); 
                 }

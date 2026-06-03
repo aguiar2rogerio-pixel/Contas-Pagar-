@@ -3,13 +3,14 @@
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    const textoMesAno = document.getElementById('filtro-mes-ano');
+    const textoMesAno = document.getElementById('mes-atual');
     const btnMesAnterior = document.getElementById('btn-mes-anterior');
-    const btnMesSeguinte = document.getElementById('btn-mes-seguinte');
+    const btnMesSeguinte = document.getElementById('btn-mes-proximo');
     
     const labelTotalGeral = document.getElementById('total-geral-mes');
-    const listaPrioridades = document.getElementById('lista-prioridades-contas');
-    const containerRateio = document.getElementById('container-cards-rateio');
+    const listaPrioridades = document.getElementById('lista-prioridades');
+    const listaFaturas = document.getElementById('lista-faturas-cartoes');
+    const containerRateio = document.getElementById('grade-rateio');
 
     const nomesMeses = [
         "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -74,6 +75,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Renderiza faturas de cartões
+        if (listaFaturas) {
+            listaFaturas.innerHTML = '';
+            const cartoesChaves = Object.keys(resumo.cartoes || {});
+            if (cartoesChaves.length === 0) {
+                listaFaturas.innerHTML = `<div style="color: #B3B3B3; font-size: 14px; text-align: center; padding: 20px;">Nenhuma fatura de cartão este mês.</div>`;
+            } else {
+                cartoesChaves.forEach(cartao => {
+                    const valor = resumo.cartoes[cartao];
+                    listaFaturas.innerHTML += `
+                        <div class="card-item" style="border-left: 4px solid #FF6B6B; padding: 12px; margin-bottom: 10px; background-color: #1E1E1E; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 15px; font-weight: bold; display: block; color: #FFF;">💳 ${cartao}</span>
+                                <span style="font-size: 11px; color: #888; display: block; margin-top: 2px;">Fatura do Mês</span>
+                            </div>
+                            <div style="font-size: 16px; font-weight: bold; color: #FF6B6B;">
+                                R$ ${valor.toFixed(2).replace('.', ',')}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        }
+
         // Renderiza a aba de Rateio/Divisão (Aba 2)
         if (containerRateio) {
             containerRateio.innerHTML = '';
@@ -106,6 +131,14 @@ document.addEventListener('DOMContentLoaded', () => {
         btnMesSeguinte.addEventListener('click', () => {
             mesAtual++;
             if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+            atualizarPainelVisual();
+        });
+    }
+
+    if (btnMesAnterior) {
+        btnMesAnterior.addEventListener('click', () => {
+            mesAtual--;
+            if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
             atualizarPainelVisual();
         });
     }
